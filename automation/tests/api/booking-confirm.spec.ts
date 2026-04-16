@@ -36,4 +36,18 @@ test.describe('POST /api/booking/confirm — contract', () => {
     const res = await apiCall(freshPage, '/api/booking/confirm', post(bad));
     expect(res.status).toBe(400);
   });
+
+  test('TC-N10 — tampered price rejected with PRICE_MISMATCH', async ({ freshPage }) => {
+    const tampered = { ...happyPayload, price: 10 };
+    const res = await apiCall(freshPage, '/api/booking/confirm', post(tampered));
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'PRICE_MISMATCH' });
+  });
+
+  test('unknown skipSize rejected with UNKNOWN_SKIP_SIZE', async ({ freshPage }) => {
+    const bad = { ...happyPayload, skipSize: '99-yard' };
+    const res = await apiCall(freshPage, '/api/booking/confirm', post(bad));
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'UNKNOWN_SKIP_SIZE' });
+  });
 });

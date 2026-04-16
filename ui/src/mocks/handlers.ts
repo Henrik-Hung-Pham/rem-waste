@@ -5,7 +5,7 @@ import {
   BS1_4DJ_ADDRESSES,
   M1_1AE_ADDRESSES,
 } from './fixtures/addresses';
-import { buildSkips } from './fixtures/skips';
+import { buildSkips, SKIP_CATALOGUE } from './fixtures/skips';
 import { mockState, resetMockState } from './fixtures/state';
 
 /**
@@ -114,6 +114,21 @@ export const handlers = [
     if (!body || required.some((k) => !(k in body))) {
       return HttpResponse.json(
         { error: 'INVALID_PAYLOAD', message: 'Missing required booking fields' },
+        { status: 400 },
+      );
+    }
+    // Server-side catalogue validation — rejects tampered prices and unknown
+    // skip sizes. Matches manual TC-N10 (Price Tampering) expectation.
+    const entry = SKIP_CATALOGUE.find((s) => s.size === body.skipSize);
+    if (!entry) {
+      return HttpResponse.json(
+        { error: 'UNKNOWN_SKIP_SIZE', message: 'Unknown skip size' },
+        { status: 400 },
+      );
+    }
+    if (typeof body.price !== 'number' || body.price !== entry.price) {
+      return HttpResponse.json(
+        { error: 'PRICE_MISMATCH', message: 'Submitted price does not match catalogue' },
         { status: 400 },
       );
     }

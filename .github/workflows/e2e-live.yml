@@ -139,7 +139,7 @@ jobs:
 
       - name: Upload HTML report
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.project }}-${{ github.run_id }}
           path: automation/playwright-report
@@ -147,7 +147,7 @@ jobs:
 
       - name: Upload JUnit results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: junit-${{ matrix.project }}-${{ github.run_id }}
           path: automation/results.xml

@@ -48,7 +48,7 @@ rem-waste/
 ├── manual-tests.md            # 36 manual test cases (§6 ≥35)
 ├── bug-reports.md             # 3 real bug reports (§7 ≥3, ≥1 state-transition)
 ├── ui/                        # React + Vite + TS app + MSW mocks
-├── automation/                # Playwright + TS test suite (53 tests × 7-browser matrix in CI)
+├── automation/                # Playwright + TS test suite (57 tests × 7-browser matrix in CI)
 └── evidence/                  # §9 artifacts — screenshots, video, Lighthouse, axe
 ```
 
@@ -79,20 +79,20 @@ Retry counter state lives in [ui/src/mocks/fixtures/state.ts](./ui/src/mocks/fix
 
 ## What's tested
 
-### Automation (Playwright + TS · 53 tests per browser, 7-browser matrix in CI)
+### Automation (Playwright + TS · 57 tests per browser, 7-browser matrix in CI)
 
 | Where | Count | What |
 | --- | --- | --- |
 | [`tests/e2e/flow-a-general.spec.ts`](./automation/tests/e2e/flow-a-general.spec.ts) | 1 | **Flow A** — SW1A 1AA → General waste → 4-yard → confirm (covers all 4 endpoints; double-submit asserted by request counting) |
 | [`tests/e2e/flow-b-heavy-plasterboard.spec.ts`](./automation/tests/e2e/flow-b-heavy-plasterboard.spec.ts) | 1 | **Flow B** — BS1 4DJ retry → Heavy + Plasterboard → disabled skips → double-click confirm |
-| [`tests/e2e/step1-postcode.spec.ts`](./automation/tests/e2e/step1-postcode.spec.ts) | 13 | Step 1: validation, normalization, all four §4 fixtures (SW1A/EC1A/M1/BS1) |
-| [`tests/e2e/step2-waste.spec.ts`](./automation/tests/e2e/step2-waste.spec.ts) | 8 | Step 2: branching, plasterboard handling, mutually-exclusive logic |
+| [`tests/e2e/step1-postcode.spec.ts`](./automation/tests/e2e/step1-postcode.spec.ts) | 15 | Step 1: validation, normalization, all four §4 fixtures (SW1A/EC1A/M1/BS1), BUG-004 regression |
+| [`tests/e2e/step2-waste.spec.ts`](./automation/tests/e2e/step2-waste.spec.ts) | 8 | Step 2: branching, plasterboard handling, mutually-exclusive logic, BUG-001 regression |
 | [`tests/e2e/step3-skip.spec.ts`](./automation/tests/e2e/step3-skip.spec.ts) | 7 | Step 3: ≥8 skips, disabled-state under heavy waste, aria-checked semantics |
-| [`tests/e2e/step4-review.spec.ts`](./automation/tests/e2e/step4-review.spec.ts) | 6 | Step 4: summary, price-breakdown arithmetic, single-fire confirm, BK-id format |
+| [`tests/e2e/step4-review.spec.ts`](./automation/tests/e2e/step4-review.spec.ts) | 6 | Step 4: summary, price-breakdown arithmetic, single-fire confirm, TC-N10 price-tamper rejection, BK-id format |
 | [`tests/e2e/accessibility.spec.ts`](./automation/tests/e2e/accessibility.spec.ts) | 4 | axe-core scan per step (WCAG 2 A/AA) |
-| [`tests/api/*.spec.ts`](./automation/tests/api/) | 13 | Contract tests — zod-validated shape for every §5 endpoint, in-browser fetch through MSW |
+| [`tests/api/*.spec.ts`](./automation/tests/api/) | 15 | Contract tests — zod-validated shape for every §5 endpoint; catalogue + price-mismatch validation |
 
-Assertions fire at every step. Selectors prefer accessible roles/names; `data-testid` is the fallback (never CSS-chained to styling). No hard waits; all awaits hang off events/responses/locator states.
+Assertions fire at every step. Selectors follow a strict priority — accessible role + name first, `data-testid` second, then testid-scoped attribute queries (e.g. `[data-testid^="skip-"][data-disabled]`) for multi-element filters. Styling-based CSS selectors are avoided entirely. No hard waits; all awaits hang off events/responses/locator states.
 
 **Run locally**: `cd automation && npx playwright test` (boots Vite automatically, reuses an existing dev server if present).
 
@@ -112,12 +112,15 @@ Strict markdown table format; one row per case with ID, type, priority, steps, e
 
 ### Bugs (§7)
 
-[bug-reports.md](./bug-reports.md) — **4 bugs**, with two in the state-transition category:
+[bug-reports.md](./bug-reports.md) — **4 logged bugs** (2 open, 2 resolved; 3 state-transition class):
 
-- **BUG-001** *(state-transition, **fixed** in `milestone-3`)* — Step 2 validation error did not auto-clear when the condition was fixed.
+**Open:**
 - **BUG-002** — Back-nav to Step 1 re-fires the postcode lookup unnecessarily.
 - **BUG-003** *(state-transition, mock-state)* — BS1 4DJ retry counter leaks across "Book another skip" restarts.
-- **BUG-004** *(state-transition)* — Step 1 unselects the previously chosen address when the user re-submits the same postcode.
+
+**Resolved (kept for traceability, regressions under automation):**
+- **BUG-001** *(state-transition, fixed in `milestone-3`)* — Step 2 validation error did not auto-clear when the condition was fixed.
+- **BUG-004** *(state-transition, fixed in `milestone-4`)* — Step 1 unselected the previously chosen address when the user re-submitted the same postcode.
 
 Each has severity · priority · environment · steps · actual vs expected · screenshot + video evidence · suspected root cause. Evidence PNGs and MP4 walkthroughs live in [`evidence/bugs/`](./evidence/bugs/).
 

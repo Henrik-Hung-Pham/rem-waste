@@ -1,17 +1,26 @@
 # Bug Reports — rem-waste Booking Flow
 
 > **Rubric**: `ASSESSMENT.md §7` — ≥3 bugs, each with severity / priority / environment / steps / actual vs expected / evidence. At least one must involve branching or state transition.
-> **Test build**: `2026-04-16:milestone-3` — commit hash on submission.
+> **Test build**: `2026-04-16:milestone-4` — commit hash on submission.
 > **Methodology**: each bug was reproduced twice on the build above before logging. Evidence files are PNG/MP4 attachments in [`evidence/bugs/`](./evidence/bugs/).
 
 ## Summary
 
+### Open (2)
+
 | ID | Title | Category | Severity | Priority | Area | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| BUG-001 | Step 2 validation error does not auto-clear when the condition is fixed | State transition | S3 — moderate | P2 | Waste type (Step 2) | **Fixed** in `2026-04-16:milestone-3` |
 | BUG-002 | Navigating Back from Step 2 re-fires the postcode lookup unnecessarily | Performance / state | S4 — minor | P3 | Postcode (Step 1) | Open |
 | BUG-003 | Mock backend's BS1 4DJ retry counter is not reset on "Book another skip", so the documented *500 on first call* behavior disappears for the second booking | State transition (mock/data) | S3 — moderate | P2 | Cross-cutting / demo fidelity | Open |
-| BUG-004 | Step 1 unselects the previously chosen address when the user re-submits the same postcode | State transition | S3 — moderate | P2 | Postcode (Step 1) | Open |
+
+### Resolved (2)
+
+| ID | Title | Category | Severity | Priority | Area | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| BUG-001 | Step 2 validation error does not auto-clear when the condition is fixed | State transition | S3 — moderate | P2 | Waste type (Step 2) | **Fixed** in `2026-04-16:milestone-3` · regression covered by `step2-waste.spec.ts::BUG-001 regression` |
+| BUG-004 | Step 1 unselects the previously chosen address when the user re-submits the same postcode | State transition | S3 — moderate | P2 | Postcode (Step 1) | **Fixed** in `2026-04-16:milestone-4` · regression covered by `step1-postcode.spec.ts::BUG-004` |
+
+Kept in this report for traceability — the state-transition class requirement (§7) is met by the open set (BUG-003) as well as by the resolved pair (BUG-001, BUG-004).
 
 ---
 
@@ -220,7 +229,8 @@ Fix options:
 - **Severity**: S3 — moderate (recoverable but unexpected; user must re-select)
 - **Priority**: P2 — fix in current sprint
 - **Reporter**: QA · 2026-04-16
-- **Build**: `2026-04-16:milestone-3`
+- **Build (reported)**: `2026-04-16:milestone-3`
+- **Status**: **Fixed in `2026-04-16:milestone-4`** — `PostcodeStep.runLookup` now compares against `lastAttempted.current` *before* overwriting it, so an unchanged postcode preserves the selection. `handleSubmit` no longer clears unconditionally. The ref is also seeded from `initialPostcode` so mount-time re-lookups (Back from Step 2) don't clobber the prior pick. Regression covered by `automation/tests/e2e/step1-postcode.spec.ts::BUG-004 — re-submitting the same postcode preserves the selected address`.
 
 ### Environment
 
@@ -275,18 +285,13 @@ Two interacting defects in `ui/src/steps/PostcodeStep.tsx`:
 1. `handleSubmit` unconditionally calls `setSelectedId(null)` *before* delegating to `runLookup`, regardless of whether the postcode changed.
 2. The intended-guard inside `runLookup` is dead code: `lastAttempted.current` is assigned to `normalized` on the line above, so the comparison `normalized !== lastAttempted.current` can never be true.
 
-### Suggested fix
+### Applied fix
 
-```ts
-function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
-  const next = normalizePostcode(postcode);
-  if (next !== lastAttempted.current) setSelectedId(null);
-  void runLookup(postcode);
-}
-```
+- `runLookup` now performs the `normalized !== lastAttempted.current` comparison **before** assigning, so the guard is live (not dead).
+- `handleSubmit` no longer calls `setSelectedId(null)` — that concern now lives in one place (`runLookup`).
+- `lastAttempted` is seeded from `initialPostcode` so a mount-time lookup (user arriving via Back from Step 2) compares equal and preserves `initialSelectedId`.
 
-…and remove the dead `if` branch inside `runLookup`.
+See [`ui/src/steps/PostcodeStep.tsx`](./ui/src/steps/PostcodeStep.tsx).
 
 ### Evidence
 
@@ -303,5 +308,5 @@ function handleSubmit(e: React.FormEvent) {
 
 ### Test coverage
 
-- No existing manual case directly catches this (TC-T04 only asserts the *changed-postcode* path).
-- Recommendation: add a new scenario — "Re-submitting an unchanged postcode preserves the selected address" — and a Playwright assertion in `flow-a-general.spec.ts` after step 1.
+- Automated: [`automation/tests/e2e/step1-postcode.spec.ts`](./automation/tests/e2e/step1-postcode.spec.ts) — `BUG-004 — re-submitting the same postcode preserves the selected address` asserts the radio remains checked and Continue stays enabled after a second `Find address` click on the same input.
+- Companion test: `changing the postcode still clears the previous selection` guards the other direction so the fix doesn't over-preserve state across postcodes.

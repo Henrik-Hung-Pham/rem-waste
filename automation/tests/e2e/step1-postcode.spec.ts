@@ -151,4 +151,45 @@ test.describe('Step 1 — Postcode', () => {
       await expect(page.getByRole('alert')).toBeHidden();
     });
   });
+
+  test.describe('regression', () => {
+    test('BUG-004 — re-submitting the same postcode preserves the selected address', async ({
+      page,
+      postcodePage,
+    }) => {
+      await postcodePage.lookup('SW1A 1AA');
+      await postcodePage.selectAddress('addr_sw1a_01');
+      await expect(postcodePage.continueButton).toBeEnabled();
+
+      // Re-click Find address without changing the input value.
+      const retriggered = page.waitForResponse(
+        (r) => r.url().endsWith('/api/postcode/lookup') && r.status() === 200,
+      );
+      await postcodePage.submit.click();
+      await retriggered;
+
+      // Same radio still checked → Continue still enabled.
+      const radio = page
+        .getByTestId('address-option-addr_sw1a_01')
+        .locator('input[type="radio"]');
+      await expect(radio).toBeChecked();
+      await expect(postcodePage.continueButton).toBeEnabled();
+    });
+
+    test('changing the postcode still clears the previous selection', async ({
+      postcodePage,
+    }) => {
+      await postcodePage.lookup('SW1A 1AA');
+      await postcodePage.selectAddress('addr_sw1a_01');
+
+      // New postcode → selection must be cleared (not preserved from prior run).
+      await postcodePage.input.fill('EC1A 1BB');
+      await postcodePage.submit.click();
+      await expect(postcodePage.empty).toBeVisible();
+
+      // addr_sw1a_01 isn't in EC1A's list (which is empty) — but continue must
+      // also be unreachable: the empty-state branch owns the UI now.
+      await expect(postcodePage.continueButton).toBeHidden();
+    });
+  });
 });

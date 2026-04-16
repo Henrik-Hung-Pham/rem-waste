@@ -61,39 +61,35 @@ test.describe('Step 4 — Review & confirm', () => {
     await expect(page.getByTestId('booking-success')).toBeVisible();
   });
 
-  test('TC-N10 — tampered price gets a server 400; app shows error, not success', async ({
+  test('TC-N10 — tampered price rejected by catalogue validation; UI shows error', async ({
     page,
     reviewPage,
   }) => {
-    // NOTE: This test is skipped in automated runs against the GitHub Pages deploy
-    // because MSW's service worker intercepts all /api/* requests in-browser
-    // before Playwright's page.route() network hook can intercept them.
-    // page.route() only captures requests that reach the network; MSW responds
-    // to them inside the browser context, bypassing Playwright's proxy.
-    //
-    // Verified manually: Enter Step 4, open DevTools → Network, right-click the
-    // pending confirm request and modify the price field before sending.
-    // The app surfaces the error Alert and does NOT show the booking-success screen.
-    // See: manual-tests.md TC-N10 (Checkout API Intrusion: Price Tampering).
-    test.fixme(
-      true,
-      'page.route() cannot intercept MSW service-worker responses on the Pages deploy. ' +
-      'Covered by manual TC-N10. On a real (non-MSW) backend this automation would pass.',
-    );
-
-    await page.route('**/api/booking/confirm', async (route) => {
-      await route.fulfill({
-        status: 400,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          error: 'PRICE_MISMATCH',
-          message: 'Submitted price does not match catalogue',
-        }),
-      });
+    // Intercept fetch inside the browser context (where MSW lives) so we can
+    // tamper with the outbound body *before* the service worker sees it.
+    // This simulates a malicious client (DevTools request-editor) altering
+    // the price field; the MSW handler rejects with PRICE_MISMATCH.
+    await page.evaluate(() => {
+      const original = window.fetch.bind(window);
+      window.fetch = async (input, init) => {
+        const url = typeof input === 'string' ? input : (input as Request).url;
+        if (url.endsWith('/api/booking/confirm') && init?.body) {
+          const body = JSON.parse(init.body as string);
+          body.price = 10; // tamper
+          return original(input, { ...init, body: JSON.stringify(body) });
+        }
+        return original(input, init);
+      };
     });
 
+    const response = page.waitForResponse((r) => r.url().endsWith('/api/booking/confirm'));
     await reviewPage.confirmButton.click();
-    await expect(page.getByRole('alert')).toBeVisible({ timeout: 8_000 });
+    const res = await response;
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body).toMatchObject({ error: 'PRICE_MISMATCH' });
+
+    await expect(page.getByRole('alert')).toBeVisible();
     await expect(page.getByTestId('booking-success')).toBeHidden();
   });
 

@@ -110,7 +110,12 @@ export function PostcodeStep({
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const inFlight = useRef<AbortController | null>(null);
-  const lastAttempted = useRef<string>('');
+  // Seed with the incoming postcode so a mount-time lookup (user coming Back
+  // from Step 2, or re-submitting the same postcode) does NOT clear the
+  // existing selection. See BUG-004.
+  const lastAttempted = useRef<string>(
+    initialPostcode ? normalizePostcode(initialPostcode) : '',
+  );
 
   // If we were re-entered (user went Back from step 2) and we already have a
   // postcode value, trigger the lookup so the previously selected address
@@ -129,6 +134,11 @@ export function PostcodeStep({
       return;
     }
     setValidationError(null);
+
+    // Only clear the selection if the postcode actually changed. This
+    // comparison must happen BEFORE we overwrite lastAttempted — the previous
+    // implementation reversed the order, making the guard dead code (BUG-004).
+    if (normalized !== lastAttempted.current) setSelectedId(null);
     lastAttempted.current = normalized;
 
     inFlight.current?.abort();
@@ -136,8 +146,6 @@ export function PostcodeStep({
     inFlight.current = ac;
 
     setStatus({ kind: 'loading' });
-    // Only clear the selection if the postcode actually changed.
-    if (normalized !== lastAttempted.current) setSelectedId(null);
 
     try {
       const res = await api.lookupPostcode(normalized, ac.signal);
@@ -157,8 +165,9 @@ export function PostcodeStep({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Clear selection when starting a new lookup from a changed postcode.
-    setSelectedId(null);
+    // Selection-clearing is handled inside runLookup — only when the
+    // normalized postcode actually changed. Re-submitting the same postcode
+    // must preserve the user's pick (BUG-004 regression).
     void runLookup(postcode);
   }
 
