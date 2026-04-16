@@ -132,7 +132,7 @@ export function SkipStep({ postcode, heavyWaste, initialSize, onBack, onContinue
                   >
                     <span className="flex items-baseline justify-between gap-2">
                       <span className={`font-bold text-lg ${skip.disabled ? 'text-gray-400' : 'text-navy-900'}`}>{label}</span>
-                      <span className={`text-xl font-extrabold ${skip.disabled ? 'text-gray-400' : 'text-brand-600'}`} data-testid={`skip-${skip.size}-price`}>
+                      <span className={`text-xl font-extrabold ${skip.disabled ? 'text-gray-400' : 'text-brand-700'}`} data-testid={`skip-${skip.size}-price`}>
                         £{skip.price}
                       </span>
                     </span>

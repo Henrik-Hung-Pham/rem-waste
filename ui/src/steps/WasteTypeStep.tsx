@@ -198,7 +198,7 @@ export function WasteTypeStep({ initial, onBack, onContinue }: Props) {
           {HANDLING_OPTIONS.map((opt) => (
             <label
               key={opt.value}
-              className="flex items-center gap-3 cursor-pointer text-navy-900 font-medium hover:text-brand-600 transition-colors"
+              className="flex items-center gap-3 cursor-pointer text-navy-900 font-medium hover:text-brand-700 transition-colors"
               data-testid={`plasterboard-${opt.value}`}
             >
               <input
