@@ -60,6 +60,8 @@ The validation message remains visible until the user clicks **Continue** a seco
 
 In `ui/src/steps/WasteTypeStep.tsx`, `setValidation(null)` is only invoked inside `handleSubmit` (line 56). No onChange handler clears it. Fix: call `setValidation(null)` from the plasterboard-option radio `onChange` (and optionally from each checkbox).
 
+### Evidence
+
 - Before-fix screenshot: 
   ![BUG-001 Before](./evidence/bugs/BUG-001-before.png)
   *validation message still visible after radio is selected.*
@@ -67,7 +69,9 @@ In `ui/src/steps/WasteTypeStep.tsx`, `setValidation(null)` is only invoked insid
   ![BUG-001 After](./evidence/bugs/BUG-001-after.png)
   *message clears immediately on selection.*
 - **Video walkthrough (fixed state)**:
-  ![BUG-001 Video](./evidence/bugs/BUG-001.mp4)
+  <video src="./evidence/bugs/BUG-001.mp4" controls width="600"></video>
+  
+  [Download/View BUG-001.mp4](./evidence/bugs/BUG-001.mp4)
   *Demonstrating that the validation error now clears instantly upon selecting a handling option.*
 - Original source line (pre-fix): `ui/src/steps/WasteTypeStep.tsx` — only clear-site was `handleSubmit`.
 - Fix diff: `setValidation(null)` added to `handleGeneralToggle`, `handlePlasterboardToggle`, `handlePlasterboardOption`, and the Heavy checkbox `onChange`.
@@ -131,7 +135,9 @@ Fix options:
   ![BUG-002 Network](./evidence/bugs/BUG-002-network.png)
   *second POST /api/postcode/lookup visible after Back.*
 - **Video evidence**:
-  ![BUG-002 Video](./evidence/bugs/BUG-002.mp4)
+  <video src="./evidence/bugs/BUG-002.mp4" controls width="600"></video>
+  
+  [Download/View BUG-002.mp4](./evidence/bugs/BUG-002.mp4)
   *Visual capture of the Network tab re-fetching the same postcode upon back-navigation from Step 2.*
 - Source: `ui/src/steps/PostcodeStep.tsx` `useEffect` on mount that calls `runLookup(initialPostcode)` whenever `initialPostcode` is non-empty.
 
@@ -195,7 +201,9 @@ Fix options:
   ![BUG-003 Counter Leak](./evidence/bugs/BUG-003-counter-leak.png)
   *first run shows error; second run after "Book another skip" returns 200 directly.*
 - **Video evidence**:
-  ![BUG-003 Video](./evidence/bugs/BUG-003.mp4)
+  <video src="./evidence/bugs/BUG-003.mp4" controls width="600"></video>
+  
+  [Download/View BUG-003.mp4](./evidence/bugs/BUG-003.mp4)
   *Demonstrating that BS1 4DJ fails to show the error state on the second booking run within the same session.*
 - Source: `ui/src/mocks/fixtures/state.ts` (module-scope singleton), `ui/src/App.tsx::INITIAL` (does not trigger mock reset).
 
@@ -287,7 +295,9 @@ function handleSubmit(e: React.FormEvent) {
   
   ![BUG-004 After (unselected after resubmit)](./evidence/bugs/BUG-004-after.png)
 - **Video evidence**:
-  ![BUG-004 Video](./evidence/bugs/BUG-004.mp4)
+  <video src="./evidence/bugs/BUG-004.mp4" controls width="600"></video>
+  
+  [Download/View BUG-004.mp4](./evidence/bugs/BUG-004.mp4)
   *Capture showing the radio selection cleared and Continue button disabled after re-clicking Find Address on the same postcode.*
 - Source: `ui/src/steps/PostcodeStep.tsx` — `handleSubmit` and `runLookup`.
 

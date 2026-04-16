@@ -131,7 +131,8 @@ All artefacts in [evidence/](./evidence/):
 | --- | --- | --- |
 | Desktop screenshots | `evidence/screenshots/desktop/` | 9 frames — each step, plasterboard expanded, disabled skips, error+retry, success |
 | Mobile screenshots (375×667) | `evidence/screenshots/mobile/` | 8 frames — same flow, mobile viewport |
-| Flow video | [`evidence/video/flow-b.mp4`](./evidence/video/flow-b.mp4) (H.264, 314 KB, ~64 s) — also [`flow-b.webm`](./evidence/video/flow-b.webm) (original Playwright capture) | Flow B: BS1 4DJ retry → heavy + plasterboard → disabled skips → confirm → success. Within §9 60–120 s window. MP4 renders inline on GitHub. |
+| Flow A video | [`evidence/video/flow-a.mp4`](./evidence/video/flow-a.mp4) | Flow A: SW1A 1AA → General waste → 4-yard → confirm. <br><video src="./evidence/video/flow-a.mp4" controls width="400"></video> |
+| Flow B video | [`evidence/video/flow-b.mp4`](./evidence/video/flow-b.mp4) | Flow B: BS1 4DJ retry → heavy + plasterboard → disabled skips → confirm. <br><video src="./evidence/video/flow-b.mp4" controls width="400"></video> |
 | Lighthouse — desktop | `evidence/lighthouse/desktop.report.html` | **Perf 100 · A11y 100 · Best-Practices 100 · SEO 91** |
 | Lighthouse — mobile | `evidence/lighthouse/mobile.report.html` | **Perf 99 · A11y 100 · Best-Practices 100 · SEO 91** |
 | Accessibility (axe) | `evidence/a11y/step{1..4}.json` + `summary.json` | **0 violations** (0 critical, 0 serious) across every step, tags `wcag2a` + `wcag2aa` |
