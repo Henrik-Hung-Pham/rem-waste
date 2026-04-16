@@ -13,7 +13,7 @@
     "orientationAngle": 0,
     "orientationType": "landscape-primary"
   },
-  "timestamp": "2026-04-16T06:36:05.142Z",
+  "timestamp": "2026-04-16T18:30:12.250Z",
   "url": "http://localhost:5173/",
   "toolOptions": {
     "runOnly": {
@@ -1917,15 +1917,15 @@
               "id": "color-contrast",
               "data": {
                 "fgColor": "#ffffff",
-                "bgColor": "#1e41b1",
-                "contrastRatio": 8.58,
+                "bgColor": "#1e40af",
+                "contrastRatio": 8.72,
                 "fontSize": "10.5pt (14px)",
                 "fontWeight": "normal",
                 "expectedContrastRatio": "4.5:1"
               },
               "relatedNodes": [],
               "impact": "serious",
-              "message": "Element has sufficient color contrast of 8.58"
+              "message": "Element has sufficient color contrast of 8.72"
             }
           ],
           "all": [],
