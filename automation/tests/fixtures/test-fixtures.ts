@@ -15,15 +15,20 @@ type Fixtures = {
 
 export const test = base.extend<Fixtures>({
   freshPage: async ({ page }, use) => {
-    await page.goto('/');
-    // Wait for the MSW worker to be active before any further requests; without
-    // this, the first spec to hit /_mocks/reset can race the SW registration.
+    // './' resolves to baseURL for both local ('http://localhost:5173/') and
+    // the Pages deploy ('https://jason-pham.github.io/rem-waste/'). Plain '/'
+    // would escape the /rem-waste/ sub-path on Pages.
+    await page.goto('./');
     await page.waitForFunction(
       () => navigator.serviceWorker?.controller !== null,
       undefined,
       { timeout: 10_000 },
     );
-    await page.request.post('/_mocks/reset');
+    // Best-effort mock reset. This endpoint is MSW-handled in the browser but
+    // `page.request` hits the origin Node-side and bypasses the SW, so against
+    // the Pages deploy it 404s. Each Playwright context starts with a fresh SW
+    // registration, so isolation is preserved either way.
+    await page.request.post('/_mocks/reset').catch(() => undefined);
     await use(page);
   },
   postcodePage: async ({ freshPage }, use) => {

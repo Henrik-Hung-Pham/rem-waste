@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:5173';
+// Only boot the local Vite dev server when BASE_URL points at localhost.
+// In CI runs against the GitHub Pages deploy, we skip webServer entirely.
+const IS_LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1)/.test(BASE_URL);
 
 export default defineConfig({
   testDir: './tests',
@@ -38,13 +41,15 @@ export default defineConfig({
       timeout: 90_000,
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    cwd: '../ui',
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-    stdout: 'ignore',
-    stderr: 'pipe',
-  },
+  webServer: IS_LOCAL
+    ? {
+        command: 'npm run dev',
+        cwd: '../ui',
+        url: BASE_URL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 60_000,
+        stdout: 'ignore',
+        stderr: 'pipe',
+      }
+    : undefined,
 });

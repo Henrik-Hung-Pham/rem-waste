@@ -1,0 +1,69 @@
+name: E2E (live Pages)
+
+# Runs the Playwright suite against the deployed GitHub Pages site at
+# https://jason-pham.github.io/rem-waste/.
+#
+# Triggers:
+#   - workflow_run: fires after "Deploy to GitHub Pages" completes, so every
+#     push to main is covered once the fresh bundle is actually live.
+#   - schedule:     daily at 06:00 UTC — catches drift from external sources.
+#   - workflow_dispatch: manual re-run button.
+#
+# Excluded specs:
+#   - tests/evidence/*     — capture specs, not functional.
+#   - tests/e2e/postcode-smoke.spec.ts — uses page.route() to simulate network
+#     errors, which does not intercept SW-controlled requests on the live site.
+
+on:
+  workflow_run:
+    workflows: ['Deploy to GitHub Pages']
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    # On workflow_run, only proceed if the deploy actually succeeded.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: automation
+    env:
+      BASE_URL: https://jason-pham.github.io/rem-waste/
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: automation/package-lock.json
+
+      - run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Playwright tests against live site
+        run: >-
+          npx playwright test
+          --project=chromium
+          tests/e2e/flow-a-general.spec.ts
+          tests/e2e/flow-b-heavy-plasterboard.spec.ts
+          tests/api
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: automation/playwright-report
+          retention-days: 14
