@@ -60,7 +60,9 @@ rem-waste/
 │   ├── video/              # 60–120s flow
 │   ├── lighthouse/
 │   └── a11y/
-└── .github/workflows/tests.yml
+└── .github/workflows/
+    ├── deploy-pages.yml    # build + deploy the SPA to GitHub Pages on push to main
+    └── e2e-live.yml        # Playwright matrix against the live Pages URL (push, daily, manual)
 ```
 
 ## Agent workflow

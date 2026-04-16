@@ -23,9 +23,6 @@ permissions:
 
 env:
   LIVE_URL: https://jason-pham.github.io/rem-waste/
-  # Opt into Node 24 for JS-based actions early; silences the deprecation
-  # warning GitHub emits while Node 20 is phased out through Sept 2026.
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   # -------------------------------------------------------------------------
@@ -35,9 +32,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -101,9 +98,9 @@ jobs:
       CI: 'true'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -122,7 +119,7 @@ jobs:
 
       - name: Upload HTML report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-report-${{ matrix.project }}-${{ github.run_id }}
           path: automation/playwright-report
@@ -130,7 +127,7 @@ jobs:
 
       - name: Upload JUnit results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: junit-${{ matrix.project }}-${{ github.run_id }}
           path: automation/results.xml
