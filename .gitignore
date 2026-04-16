@@ -7,4 +7,7 @@ dist
 test-results
 playwright-report
 blob-report
+*.tsbuildinfo
+ui/vite.config.js
+ui/vite.config.d.ts
 evidence/bugs/*/trace.zip
