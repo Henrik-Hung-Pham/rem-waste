@@ -39,6 +39,7 @@ export function WasteTypeStep({ initial, onBack, onContinue }: Props) {
   function handlePlasterboardToggle(next: boolean) {
     setPlasterboard(next);
     if (!next) setPlasterboardOption(null);
+    setValidation(null);
   }
 
   // Selecting general waste is mutually exclusive with heavy + plasterboard in the UI;
@@ -50,6 +51,12 @@ export function WasteTypeStep({ initial, onBack, onContinue }: Props) {
       setPlasterboard(false);
       setPlasterboardOption(null);
     }
+    setValidation(null);
+  }
+
+  function handlePlasterboardOption(value: NonNullable<WasteSelection['plasterboardOption']>) {
+    setPlasterboardOption(value);
+    setValidation(null);
   }
 
   async function handleSubmit() {
@@ -145,6 +152,7 @@ export function WasteTypeStep({ initial, onBack, onContinue }: Props) {
             onChange={(e) => {
               setHeavyWaste(e.target.checked);
               if (e.target.checked) setGeneral(false);
+              setValidation(null);
             }}
             aria-describedby="heavy-desc"
           />
@@ -198,7 +206,7 @@ export function WasteTypeStep({ initial, onBack, onContinue }: Props) {
                 name="plasterboardOption"
                 value={opt.value}
                 checked={plasterboardOption === opt.value}
-                onChange={() => setPlasterboardOption(opt.value)}
+                onChange={() => handlePlasterboardOption(opt.value)}
               />
               <span>{opt.label}</span>
             </label>

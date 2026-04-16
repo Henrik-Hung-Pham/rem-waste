@@ -74,11 +74,23 @@ test('Flow A — SW1A 1AA → general waste → 4-yard → confirm booking', asy
   expect(breakdown.subtotal).toBeCloseTo(breakdown.skip + breakdown.permit, 2);
   expect(breakdown.total).toBeCloseTo(breakdown.subtotal + breakdown.vat, 2);
 
+  // Count every confirm request fired during a deliberate double-click.
+  let confirmRequestCount = 0;
+  page.on('request', (req) => {
+    if (req.url().endsWith('/api/booking/confirm') && req.method() === 'POST') {
+      confirmRequestCount += 1;
+    }
+  });
+
   const [confirmRequest] = await Promise.all([
     page.waitForRequest(
       (req) => req.url().endsWith('/api/booking/confirm') && req.method() === 'POST',
     ),
-    reviewPage.confirmButton.click(),
+    (async () => {
+      await reviewPage.confirmButton.click();
+      // Second click should be a no-op — button must disable on first click.
+      await reviewPage.confirmButton.click({ force: true, trial: false }).catch(() => {});
+    })(),
   ]);
   const confirmBody = confirmRequest.postDataJSON();
   expect(confirmBody).toMatchObject({
@@ -91,7 +103,9 @@ test('Flow A — SW1A 1AA → general waste → 4-yard → confirm booking', asy
   });
 
   // Success screen with booking ID shape
-  // (Double-submit prevention is exercised in Flow B via request counting.)
   await expect(page.getByTestId('booking-success')).toBeVisible();
   await expect(page.getByTestId('booking-id')).toHaveText(/^BK-\d+$/);
+
+  // Double-submit prevention: exactly one POST despite two clicks.
+  expect(confirmRequestCount).toBe(1);
 });

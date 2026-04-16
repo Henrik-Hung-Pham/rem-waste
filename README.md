@@ -49,7 +49,7 @@ rem-waste/
 ├── manual-tests.md            # 38 manual test cases (§6 ≥35)
 ├── bug-reports.md             # 3 real bug reports (§7 ≥3, ≥1 state-transition)
 ├── ui/                        # React + Vite + TS app + MSW mocks
-├── automation/                # Playwright + TS test suite (19 tests, E2E + API + evidence)
+├── automation/                # Playwright + TS test suite (51 tests × 4 browsers + evidence specs)
 └── evidence/                  # §9 artifacts — screenshots, video, Lighthouse, axe
 ```
 
@@ -80,14 +80,19 @@ Retry counter state lives in [ui/src/mocks/fixtures/state.ts](./ui/src/mocks/fix
 
 ## What's tested
 
-### Automation (Playwright + TS · 19 tests)
+### Automation (Playwright + TS · 51 tests per browser, 4-browser matrix in CI)
 
 | Where | Count | What |
 | --- | --- | --- |
-| [`tests/e2e/flow-a-general.spec.ts`](./automation/tests/e2e/flow-a-general.spec.ts) | 1 | **Flow A** — SW1A 1AA → General waste → 4-yard → confirm (covers all 4 endpoints) |
-| [`tests/e2e/flow-b-heavy-plasterboard.spec.ts`](./automation/tests/e2e/flow-b-heavy-plasterboard.spec.ts) | 1 | **Flow B** — BS1 4DJ retry → Heavy + Plasterboard → disabled skips → double-click confirm (single-fire asserted by request counting) |
-| [`tests/e2e/postcode-smoke.spec.ts`](./automation/tests/e2e/postcode-smoke.spec.ts) | 4 | Step 1 focused coverage: happy, empty, retry, invalid |
-| [`tests/api/*.spec.ts`](./automation/tests/api/) | 13 | Contract tests — zod-validated shape for every §5 endpoint, in-browser fetch through MSW |
+| [`tests/e2e/flow-a-general.spec.ts`](./automation/tests/e2e/flow-a-general.spec.ts) | 1 | **Flow A** — SW1A 1AA → General waste → 4-yard → confirm (covers all 4 endpoints; double-submit asserted by request counting) |
+| [`tests/e2e/flow-b-heavy-plasterboard.spec.ts`](./automation/tests/e2e/flow-b-heavy-plasterboard.spec.ts) | 1 | **Flow B** — BS1 4DJ retry → Heavy + Plasterboard → disabled skips → double-click confirm |
+| [`tests/e2e/step1-postcode.spec.ts`](./automation/tests/e2e/step1-postcode.spec.ts) | 13 | Step 1: validation, normalization, all four §4 fixtures (SW1A/EC1A/M1/BS1) |
+| [`tests/e2e/step2-waste.spec.ts`](./automation/tests/e2e/step2-waste.spec.ts) | 7 | Step 2: branching, plasterboard handling, mutually-exclusive logic |
+| [`tests/e2e/step3-skip.spec.ts`](./automation/tests/e2e/step3-skip.spec.ts) | 8 | Step 3: ≥8 skips, disabled-state under heavy waste, aria-checked semantics |
+| [`tests/e2e/step4-review.spec.ts`](./automation/tests/e2e/step4-review.spec.ts) | 5 | Step 4: summary, price-breakdown arithmetic, single-fire confirm, BK-id format |
+| [`tests/e2e/accessibility.spec.ts`](./automation/tests/e2e/accessibility.spec.ts) | 4 | axe-core scan per step (WCAG 2 A/AA) |
+| [`tests/api/*.spec.ts`](./automation/tests/api/) | 12 | Contract tests — zod-validated shape for every §5 endpoint, in-browser fetch through MSW |
+| [`tests/evidence/*.spec.ts`](./automation/tests/evidence/) | — | Captures screenshots / video / bug-evidence PNGs (run via `--project=evidence`) |
 
 Assertions fire at every step. Selectors prefer accessible roles/names; `data-testid` is the fallback (never CSS-chained to styling). No hard waits; all awaits hang off events/responses/locator states.
 
@@ -95,13 +100,13 @@ Assertions fire at every step. Selectors prefer accessible roles/names; `data-te
 
 ### Manual (§6)
 
-[manual-tests.md](./manual-tests.md) — **38 cases** across 5 areas (Postcode 11 · Waste 7 · Skip 8 · Review 7 · Cross-cutting 5), bucketed as:
+[manual-tests.md](./manual-tests.md) — **39 cases** across 5 areas (Postcode 12 · Waste 7 · Skip 8 · Review 7 · Cross-cutting 5), bucketed as:
 
 | Bucket | Count | Minimum |
 | --- | --- | --- |
 | Negative | 11 | ≥10 |
 | Edge | 7 | ≥6 |
-| API-failure | 5 | ≥4 |
+| API-failure | 6 | ≥4 |
 | State-transition | 5 | ≥4 |
 | Positive | 10 | — |
 
@@ -109,13 +114,14 @@ Strict markdown table format; one row per case with ID, type, priority, steps, e
 
 ### Bugs (§7)
 
-[bug-reports.md](./bug-reports.md) — **3 bugs**, including one state-transition:
+[bug-reports.md](./bug-reports.md) — **4 bugs**, with two in the state-transition category:
 
-- **BUG-001** *(state-transition)* — Step 2 validation error does not auto-clear when condition is fixed.
+- **BUG-001** *(state-transition, **fixed** in `milestone-3`)* — Step 2 validation error did not auto-clear when the condition was fixed.
 - **BUG-002** — Back-nav to Step 1 re-fires the postcode lookup unnecessarily.
 - **BUG-003** *(state-transition, mock-state)* — BS1 4DJ retry counter leaks across "Book another skip" restarts.
+- **BUG-004** *(state-transition)* — Step 1 unselects the previously chosen address when the user re-submits the same postcode.
 
-Each has severity · priority · environment · steps · actual vs expected · evidence · suspected root cause.
+Each has severity · priority · environment · steps · actual vs expected · screenshot evidence · suspected root cause. Evidence PNGs live in [`evidence/bugs/`](./evidence/bugs/), generated by [`tests/evidence/bug-evidence.spec.ts`](./automation/tests/evidence/bug-evidence.spec.ts).
 
 ## Evidence bundle (§9)
 
@@ -125,7 +131,7 @@ All artefacts in [evidence/](./evidence/):
 | --- | --- | --- |
 | Desktop screenshots | `evidence/screenshots/desktop/` | 9 frames — each step, plasterboard expanded, disabled skips, error+retry, success |
 | Mobile screenshots (375×667) | `evidence/screenshots/mobile/` | 8 frames — same flow, mobile viewport |
-| Flow video | `evidence/video/flow-b.webm` | ~66 s of Flow B (BS1 4DJ retry → heavy+plasterboard → disabled skips → confirm → success). Within §9 60–120 s window. |
+| Flow video | [`evidence/video/flow-b.mp4`](./evidence/video/flow-b.mp4) (H.264, 314 KB, ~64 s) — also [`flow-b.webm`](./evidence/video/flow-b.webm) (original Playwright capture) | Flow B: BS1 4DJ retry → heavy + plasterboard → disabled skips → confirm → success. Within §9 60–120 s window. MP4 renders inline on GitHub. |
 | Lighthouse — desktop | `evidence/lighthouse/desktop.report.html` | **Perf 100 · A11y 100 · Best-Practices 100 · SEO 91** |
 | Lighthouse — mobile | `evidence/lighthouse/mobile.report.html` | **Perf 99 · A11y 100 · Best-Practices 100 · SEO 91** |
 | Accessibility (axe) | `evidence/a11y/step{1..4}.json` + `summary.json` | **0 violations** (0 critical, 0 serious) across every step, tags `wcag2a` + `wcag2aa` |

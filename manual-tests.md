@@ -9,11 +9,11 @@
 
 | Metric | Count | Minimum |
 | --- | --- | --- |
-| **Total** | 38 | ≥35 |
+| **Total** | 39 | ≥35 |
 | Positive | 10 | — |
 | Negative | 11 | ≥10 |
 | Edge | 7 | ≥6 |
-| API-failure | 5 | ≥4 |
+| API-failure | 6 | ≥4 |
 | State-transition | 5 | ≥4 |
 
 ## Environment
@@ -33,11 +33,11 @@
 - **Priority** — P0 (blocker) · P1 (critical path) · P2 (important) · P3 (nice-to-have).
 - **Steps** — numbered, each starts from a clean tab at `/` unless stated otherwise.
 - **Status** — `Pass` · `Fail · <bug-id>` · `Blocked`.
-- **Last run** — 2026-04-15 on build `2026-04-15:milestone-2`.
+- **Last run** — 2026-04-16 on build `2026-04-16:milestone-3`.
 
 ---
 
-## Postcode — Step 1 (11)
+## Postcode — Step 1 (12)
 
 | ID | Title | Type | Priority | Preconditions | Steps | Expected | Actual | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -51,6 +51,7 @@
 | PC-E-02 | Leading/trailing whitespace trimmed `  SW1A 1AA  ` | Edge | P3 | On Step 1. | 1. Paste `  SW1A 1AA  ` (leading/trailing spaces). 2. Submit. | Results for `SW1A 1AA` render. | As expected. | Pass |
 | PC-A-01 | BS1 4DJ: 500 on first call, success on retry | API-failure | P0 | On Step 1. | 1. Type `BS1 4DJ`. 2. Click Find. 3. Click **Retry** when the error alert appears. | First call returns 500 → error alert + Retry visible. Retry re-fires the lookup; second call returns 200 and populates addresses; alert is hidden. | As expected. | Pass |
 | PC-A-02 | M1 1AE: simulated latency shows spinner ≥1 s, then resolves | API-failure | P1 | On Step 1, network tab open. | 1. Type `M1 1AE`. 2. Click Find. 3. Observe the spinner. 4. Wait for completion. | Spinner visible for ~2.5 s (matches fixture). Then Manchester addresses render. Continue disabled until selection. | As expected. | Pass |
+| PC-A-03 | Postcode lookup that never resolves: user-cancellable via new request (abort) | API-failure | P2 | On Step 1; throttle network in DevTools to "Slow 3G" or use `M1 1AE`. | 1. Type `M1 1AE`, click Find — spinner appears. 2. Without waiting, change input to `SW1A 1AA` and click Find again. | First in-flight request is aborted (visible in Network as `cancelled`); only the SW1A 1AA result list renders. No race where Manchester addresses appear after Westminster. | As expected — `AbortController` cancels the prior call. | Pass |
 | PC-T-01 | Changing postcode after selection clears the previously selected address | State-transition | P1 | Completed PC-P-01; an address is selected. | 1. Replace the postcode with `EC1A 1BB`. 2. Click Find. | Empty state renders. Previously selected address is cleared; Continue is disabled and hidden (no address list). | As expected. | Pass |
 
 ## Waste Type — Step 2 (7)
@@ -60,7 +61,7 @@
 | WT-P-01 | General waste alone submits a valid payload | Positive | P0 | Reached Step 2 via SW1A 1AA. | 1. Tick **General waste**. 2. Click Continue. | `POST /api/waste-types` sent with `{ heavyWaste: false, plasterboard: false, plasterboardOption: null }`. 200 response advances to Step 3. | As expected. | Pass |
 | WT-P-02 | Heavy alone submits `{ heavyWaste: true, plasterboard: false, plasterboardOption: null }` | Positive | P0 | Reached Step 2. | 1. Tick **Heavy waste**. 2. Click Continue. | Correct payload sent; advances to Step 3 with a visible "some skips unavailable" notice. | As expected. | Pass |
 | WT-N-01 | Submitting with no selection is blocked | Negative | P1 | Reached Step 2. | 1. Click Continue with nothing ticked. | Inline validation *"Select at least one waste type…"*. No request fires. | As expected. | Pass |
-| WT-N-02 | Plasterboard ticked but no handling option blocks submit | Negative | P1 | Reached Step 2. | 1. Tick **Plasterboard** only. 2. Click Continue without choosing a radio. | Inline validation *"Choose how much plasterboard…"*. No request fires. | As expected. | Pass |
+| WT-N-02 | Plasterboard ticked but no handling option blocks submit; validation auto-clears once an option is chosen | Negative | P1 | Reached Step 2. | 1. Tick **Plasterboard** only. 2. Click Continue without choosing a radio. 3. Tick any handling option. | Inline validation *"Choose how much plasterboard…"*. No request fires. After step 3, the validation message disappears immediately (no second click required). | As expected after BUG-001 fix. | Pass |
 | WT-E-01 | Heavy + plasterboard + general all accepted and payload is correct | Edge | P2 | Reached Step 2. | 1. Tick Heavy. 2. Tick Plasterboard. 3. Choose **10–25%**. 4. Continue. | Payload `{ heavyWaste: true, plasterboard: true, plasterboardOption: "10_to_25" }`. Step 3 renders with disabled skips + heavy notice. | As expected. | Pass |
 | WT-A-01 | `POST /api/waste-types` 500 surfaces error + Retry works | API-failure | P1 | Reached Step 2; override the route to 500 once via DevTools or test fixture. | 1. Tick Heavy. 2. Force the first submit to 500. 3. Click Retry in the alert. | First submit fails with a visible error + Retry button. Retry succeeds and advances. | *Route override via MSW dev handler.* | Pass |
 | WT-T-01 | Plasterboard deselect clears `plasterboardOption` in state and in outgoing payload | State-transition | P0 | Reached Step 2. | 1. Tick Plasterboard. 2. Pick **Over 25%**. 3. Untick Plasterboard. 4. Tick General. 5. Continue. | Handling options disappear. Outgoing payload has `plasterboardOption: null`. | See [`bug-reports.md`](./bug-reports.md) BUG-001 if the option is not cleared. | Pass |
@@ -108,7 +109,7 @@
 | --- | --- | --- | --- |
 | Negative | PC-N-01, PC-N-02, PC-N-03, PC-N-04, WT-N-01, WT-N-02, SK-N-01, SK-N-02, RV-N-01, RV-N-02, CC-N-01 | 11 | ≥10 |
 | Edge | PC-E-01, PC-E-02, WT-E-01, SK-E-01, SK-E-02, RV-E-01, CC-E-01 | 7 | ≥6 |
-| API-failure | PC-A-01, PC-A-02, WT-A-01, SK-A-01, RV-A-01 | 5 | ≥4 |
+| API-failure | PC-A-01, PC-A-02, PC-A-03, WT-A-01, SK-A-01, RV-A-01 | 6 | ≥4 |
 | State-transition | PC-T-01, WT-T-01, SK-T-01, RV-T-01, CC-T-01 | 5 | ≥4 |
 | Positive | PC-P-01, PC-P-02, WT-P-01, WT-P-02, SK-P-01, SK-P-02, RV-P-01, RV-P-02, CC-P-01, CC-P-02 | 10 | — |
-| **Total** | | **38** | **≥35** |
+| **Total** | | **39** | **≥35** |
