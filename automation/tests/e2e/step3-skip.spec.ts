@@ -61,12 +61,17 @@ test.describe('Step 3 — Skip selection', () => {
   });
 
   test.describe('heavy waste', () => {
-    test.beforeEach(async ({ postcodePage, wastePage }) => {
+    test.beforeEach(async ({ postcodePage, wastePage, skipPage }) => {
       await postcodePage.lookup('SW1A 1AA');
       await postcodePage.selectAddress('addr_sw1a_01');
       await postcodePage.continueButton.click();
       await wastePage.toggleHeavy();
       await wastePage.continueButton.click();
+      // Wait for the skips response to paint before any test queries cards —
+      // the heavy-waste notice renders in the header, so asserting on the
+      // notice alone doesn't wait for /api/skips to resolve.
+      await expect(skipPage.list).toBeVisible();
+      await expect(skipPage.card('4-yard')).toBeVisible();
     });
 
     test('shows the heavy-waste notice and ≥2 disabled skips', async ({ skipPage }) => {

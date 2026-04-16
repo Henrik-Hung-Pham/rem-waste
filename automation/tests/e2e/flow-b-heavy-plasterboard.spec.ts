@@ -62,6 +62,11 @@ test('Flow B — BS1 4DJ retry → heavy+plasterboard → disabled skips → con
   // --- Step 3: disabled skips visible, cannot be selected ---
   await expect(skipPage.heading).toBeVisible();
   await expect(skipPage.heavyWasteNotice).toBeVisible();
+  // Wait for the skip list to paint. The notice lives in the header and
+  // renders before /api/skips resolves, so gating on it alone races the
+  // disabled-card count.
+  await expect(skipPage.list).toBeVisible();
+  await expect(skipPage.card('4-yard')).toBeVisible();
 
   // At least 2 skips disabled (§4 mandate).
   const disabledCount = await skipPage.disabledCards().count();

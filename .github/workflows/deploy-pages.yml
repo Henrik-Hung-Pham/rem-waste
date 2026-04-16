@@ -14,6 +14,11 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  # Opt into Node 24 for JS-based actions early; silences the deprecation
+  # warning GitHub emits while Node 20 is phased out through Sept 2026.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   build:
     runs-on: ubuntu-latest
