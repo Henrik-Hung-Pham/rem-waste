@@ -1,83 +1,109 @@
-# Manual Test Execution Plan (End-to-End Scenarios)
+# Manual Test Plan — rem-waste Booking Flow
 
-> **Scope**: Extensive full-flow manual testing suite mimicking realistic user journeys from entry to checkout. Every test involves moving through the application's states rather than validating isolated atomic units.
-> **Assigned To**: QA Department
-> **Environment**: Production / GitHub Pages `https://jason-pham.github.io/rem-waste/`
-> **Requirements Mapped**: `ASSESSMENT.md §6` (≥35 tests, ≥10 negative, ≥6 edge, ≥4 API failures, ≥4 state transitions).
+> **Scope**: end-to-end manual coverage of the 4-step skip-booking flow (postcode → waste → skip → review) plus its branching, error and state-transition behaviours.
+> **Owner**: QA — author / executor on each row.
+> **Build under test**: `2026-04-17:milestone-4` (matches the deployed Pages bundle).
+> **Environment**: Production demo at `https://jason-pham.github.io/rem-waste/`. Local mirror: `cd ui && npm run dev` → `http://localhost:5173`.
+> **Mocking**: MSW service-worker in-browser, fixtures per `ASSESSMENT.md §4`. No real backend.
+> **Requirement mapping**: `ASSESSMENT.md §6` — ≥35 total, ≥10 negative, ≥6 edge, ≥4 API-failure, ≥4 state-transition. Strict markdown tables.
+> **Reset between cases**: hard refresh the tab (or, in DevTools console, `await fetch('/_mocks/reset', { method: 'POST' })`) so MSW counters return to a clean slate.
 
-## 📊 Suite Coverage Breakdown
+## Coverage summary
 
-| Test Category | Target (Min) | Actual Mapped |
+| Bucket | Required | Delivered |
 | :--- | :---: | :---: |
-| **Total Test Cases** | 35 | **36** |
-| 🔴 Negative Flow Tests | 10 | **10** |
-| 🟡 Edge Case Flows | 6 | **6** |
-| 🟠 API Failure Injections | 4 | **4** |
-| 🔵 State Transition Flows | 4 | **5** |
-| 🟢 Positive Flows | - | **11** |
+| **Total** | 35 | **36** |
+| Positive (happy paths) | — | 11 |
+| Negative (block / reject) | 10 | **10** |
+| Edge (boundaries / unusual input) | 6 | **6** |
+| API failure (5xx / 4xx injection) | 4 | **4** |
+| State transition (cross-step state) | 4 | **5** |
+
+## How to read this file
+
+- Each table row is one test case. Columns: **ID · Title · Priority · Preconditions · Steps · Expected · Status**.
+- **ID prefix** signals bucket: `P` positive · `N` negative · `E` edge · `A` API failure · `T` state transition.
+- **Preconditions** is what state must be true *before* the steps run. If empty, "fresh tab on Step 1".
+- **Steps** are numbered, self-contained, and refer to no other row. Reuse common setup by re-running it — verbosity beats hidden coupling.
+- **Priority** uses P1 (release-blocking) / P2 (current-sprint) / P3 (backlog).
 
 ---
 
-## 🟢 Positive E2E Journeys (11)
+## P — Positive happy paths (11)
 
-| ID | Scenario Title | Area | Test Steps (E2E Journey) | Expected Outcome | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-P01** | End-to-End Standard Booking (Default Path) | Positive | 1. Open App.<br>2. Submit `SW1A 1AA` and select '10 Downing Street'.<br>3. Continue to Step 2. Select 'General Waste'.<br>4. Continue to Step 3. Select '4 Yard Skip'.<br>5. Continue to Review. Verify Pricing.<br>6. Click 'Confirm Booking'. | System routes to the Success screen generating a valid `BK-` ID suffix. | ✅ Pass |
-| **TC-P02** | End-to-End Heavy Waste Journey | Positive | 1. Open App.<br>2. Submit `SW1A 1AA` and select an address.<br>3. At Step 2, select **only** 'Heavy Waste'.<br>4. Proceed to Step 3. Select '6 Yard Skip'.<br>5. Proceed to Step 4 and 'Confirm Booking'. | System processes booking. The heavy waste flag is successfully transmitted in the `/api/booking/confirm` payload. | ✅ Pass |
-| **TC-P03** | End-to-End Plasterboard (<10%) Journey | Positive | 1. Open App and process `SW1A 1AA`.<br>2. At Step 2, select 'Plasterboard' -> 'Under 10% of load'.<br>3. Proceed to Step 3, choose an '8 Yard Skip'.<br>4. Verify Review mappings and Confirm. | Journey succeeds. The nested sub-option `under_10` accurately appears in the review summary and API payload. | ✅ Pass |
-| **TC-P04** | End-to-End Plasterboard (10-25%) Journey | Positive | 1. Open App and process `SW1A 1AA`.<br>2. Select 'Plasterboard' -> 'Between 10% and 25%'.<br>3. Choose a valid Skip and Confirm Booking. | Journey succeeds mapping the `10_to_25` payload value accurately. | ✅ Pass |
-| **TC-P05** | End-to-End Plasterboard (>25%) Journey | Positive | 1. Open App and process `SW1A 1AA`.<br>2. Select 'Plasterboard' -> 'Over 25% of load'.<br>3. Choose a valid Skip and Confirm Booking. | Journey succeeds mapping the `over_25` payload value accurately. | ✅ Pass |
-| **TC-P06** | End-to-End Mixed Multi-Waste Journey | Positive | 1. Open App and process `SW1A 1AA`.<br>2. At Step 2, select 'General', 'Heavy', AND 'Plasterboard' (<10%).<br>3. Select the '6 Yard Skip' at Step 3.<br>4. Confirm Booking. | The checkout accepts a combined matrix of waste parameters gracefully without validation clashes. | ✅ Pass |
-| **TC-P07** | End-to-End Manual Address Entry Journey | Positive | 1. Enter `EC1A 1BB` to force the 0-results empty state.<br>2. Click "Enter Manually".<br>3. Provide 'Line 1' and 'City' data.<br>4. Select General Waste, 4-yard skip, and Confirm. | Custom string addresses are rendered correctly in the final Review visual and accepted by the backend. | ✅ Pass |
-| **TC-P08** | Sequential Book-Again Journey | Positive | 1. Complete TC-P01 to reach the Success UI.<br>2. Click 'Book another skip'.<br>3. Complete a brand new booking identically. | The framework resets cleanly. A brand new `BK-` ID distinct from the first is issued. | ✅ Pass |
-| **TC-P09** | End-to-End Maximum Capacity Request | Positive | 1. Process `SW1A 1AA`.<br>2. Select 'General Waste'.<br>3. Select '14 Yard Skip' (maximum size).<br>4. Confirm at Checkout. | Booking successfully targets the highest pricing tier and maps the `14-yard` enum. | ✅ Pass |
-| **TC-P10** | End-to-End Minimum Capacity Request | Positive | 1. Process `SW1A 1AA`.<br>2. Select 'General Waste'.<br>3. Select '4 Yard Skip' (minimum size).<br>4. Confirm at Checkout. | Booking successfully targets the lowest pricing tier and maps the `4-yard` enum. | ✅ Pass |
-| **TC-P11** | Review Screen Arithmetic Integrity | Positive | 1. Drive flow to Step 4 via General Waste, 8-yard skip.<br>2. Halt at Checkout.<br>3. Manually calculate Base Rate + VAT (20%) + Permit Fee vs 'Total' DOM element. | The rendered subtotal, VAT, permit, and final composite totals perfectly align with deterministic calculations. | ✅ Pass |
-
-## 🔴 Negative E2E Trajectories (10)
-
-| ID | Scenario Title | Area | Test Steps (E2E Journey) | Expected Outcome | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-N01** | E2E Block: Invalid Starting Format | Negative | 1. Open App.<br>2. Attempt to start journey by typing 'QWERTY 123'.<br>3. Press 'Find address'. | Journey is halted at origin. UI refuses network transmission and alerts to invalid UK formatting. | ✅ Pass |
-| **TC-N02** | E2E Block: Zero Database Hits Abandonment | Negative | 1. Enter `EC1A 1BB` (Empty State).<br>2. Refuse to fill the manual entry form.<br>3. Attempt to bypass to Step 2. | Progression is impossible. The router acts as a strict guard preventing downstream navigation without an address object. | ✅ Pass |
-| **TC-N03** | E2E Block: Blank Waste Progression | Negative | 1. Secure `SW1A 1AA` address and push to Step 2.<br>2. Leave all checkboxes unchecked.<br>3. Click 'Continue'. | System refuses advancement to Step 3. An explicit error overlay demands at least one valid domain selection. | ✅ Pass |
-| **TC-N04** | E2E Block: Orphaned Nested Input | Negative | 1. Secure `SW1A 1AA` address and push to Step 2.<br>2. Tick 'Plasterboard', but intentionally skip the sub-radio grouping.<br>3. Attempt to Continue. | System blocks progression. The plasterboard flag explicitly necessitates a paired volume metric. | ✅ Pass |
-| **TC-N05** | E2E Block: Missing Skip Resolution | Negative | 1. Drive journey successfully to Step 3.<br>2. Select absolutely no containers.<br>3. Attempt to click 'Review Booking'. | Progression halted. Application demands a non-null payload property for the skip target. | ✅ Pass |
-| **TC-N06** | E2E Block: Bypassing Restrictive Weights | Negative | 1. Drive flow targeting 'Heavy Waste' across Step 2.<br>2. Halt at Step 3.<br>3. Attempt to click and force submission with the '12 Yard Skip'. | The 12-yard block ignores pointer events/clicks. Progression remains impossible until a valid subset is clicked. | ✅ Pass |
-| **TC-N07** | E2E Block: Malformed Manual Input | Negative | 1. Drive `EC1A 1BB` to manual entry toggle.<br>2. Purposely delete 'Line 1' leaving only 'City'.<br>3. Attempt to Continue. | Form validates emptiness and halts the user before Step 2, preventing corrupted geographical data. | ✅ Pass |
-| **TC-N08** | Checkout Rejection: Rate Limit/Double Fire | Negative | 1. Complete flow perfectly through Step 1 to 4.<br>2. Spam-click 'Confirm Booking' very rapidly multiple times on a slow network profile. | System captures mouse intent and locks the button state on first action. The backend is invoked exactly ONE time. | ✅ Pass |
-| **TC-N09** | Checkout API Intrusion: Parameter Drop | Negative | 1. Reach Checkout.<br>2. Via DevTools network interception, rip `postcode` out of the JSON outbound POST.<br>3. Release interception. | The backend Zod schema trips a strict 400 rejection mapping back to a localized frontend error dialog. | ✅ Pass |
-| **TC-N10** | Checkout API Intrusion: Price Tampering | Negative | 1. Reach Checkout via 8-yard skip (£230).<br>2. Intercept the outbound `POST /api/booking/confirm` and change `price` to `10`.<br>3. Release interception. | Mock handler validates `skipSize` + `price` against the catalogue and returns HTTP 400 `PRICE_MISMATCH`. The UI surfaces the booking-failed alert; success screen is not reached. Covered by automation: `tests/e2e/step4-review.spec.ts::TC-N10` + contract test `tests/api/booking-confirm.spec.ts::tampered price rejected with PRICE_MISMATCH`. | ✅ Pass |
-
-## 🟡 Edge Case E2E Flows (6)
-
-| ID | Scenario Title | Area | Test Steps (E2E Journey) | Expected Outcome | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-E01** | Journey via Aggressive Normalization | Edge | 1. Open app.<br>2. Type `sw1a 1aa` (lowercase).<br>3. Journey straight through to Checkout. | The payload maps as canonical `SW1A 1AA` securely bypassing formatting fragility. | ✅ Pass |
-| **TC-E02** | Journey via Whitespace Bloat | Edge | 1. Open app.<br>2. Type `   SW1A   1AA   `.<br>3. Proceed normally to confirmation stage. | Trimming operations execute safely; user flow operates identically to standard formatting without breaking endpoints. | ✅ Pass |
-| **TC-E03** | Rapid Skip Catalogue Cycling | Edge | 1. Drive to Step 3 securely.<br>2. Instantly alternative click between 4-yard and 6-yard blocks 20+ times.<br>3. Review Booking. | The React tree handles synthetic events efficiently without tearing; the final step correctly captures the LAST clicked element. | ✅ Pass |
-| **TC-E04** | XSS Injection Attack Vector | Edge | 1. Trigger `EC1A 1BB` manual fallback.<br>2. Set City to `<script>alert('XSS')</script>`.<br>3. Drive to Step 4 Review screen. | The review screen strictly treats the string as safe text; no alert box fires proving DOM sanitization over custom data. | ✅ Pass |
-| **TC-E05** | Mid-Flow Refresh Returns to Step 1 (Known Limitation) | Edge | 1. Drive the user to Step 3 (Skip Selection).<br>2. Command a hard browser reload (Refresh Tab). | App state is intentionally not persisted (see `README.md` § *Known limitations*). Refresh returns the user to a clean Step 1. No stack traces, no partial renders, no stale progress indicator. | ✅ Pass |
-| **TC-E06** | Final Stage Wi-Fi Disconnect | Edge | 1. Drive flow meticulously to Step 4 Checkout.<br>2. Toggle workstation network completely to "Offline".<br>3. Try to Confirm Booking. | The `fetch()` failure is caught gracefully preventing an endless spinner infinite loop. User is notified via alert. | ✅ Pass |
-
-## 🟠 API Failure Injection Flows (4)
-
-| ID | Scenario Title | Area | Test Steps (E2E Journey) | Expected Outcome | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-A01** | Network Outage during Directory Search | API | 1. Open app.<br>2. Intercept `POST /api/postcode/lookup` routing a `500 Server Error`.<br>3. Enter `SW1A 1AA` and hit search. | Journey dies gracefully at origin. UI paints an "unavailable" error overlay prohibiting dangerous empty-state progression. | ✅ Pass |
-| **TC-A02** | Network Outage during Waste Mapping | API | 1. Pass Postcode Step safely.<br>2. Intercept `POST /api/waste-types` returning `500 Server Error`.<br>3. Submit General Waste choice. | UI spinner safely stops, throwing a retryable error boundary rather than blank routing. | ✅ Pass |
-| **TC-A03** | Network Outage during Skip Hydrating | API | 1. Drive to Step 2 and choose waste.<br>2. Intercept `GET /api/skips` returning `500 Server Error`.<br>3. Continue. | Step 3 paints an error block. Users cannot proceed to Step 4 without fetching the pricing tables. | ✅ Pass |
-| **TC-A04** | Upstream Database Disconnect on Checkout | API | 1. Navigate a perfect journey to Checkout.<br>2. Intercept `POST /api/booking/confirm` issuing a `500 Error`.<br>3. Confirm booking. | Loading spinner halts gracefully natively throwing a Toast/Alert allowing the user to preserve their input and "Retry". | ✅ Pass |
-
-## 🔵 State Transition Logic Journeys (5)
-
-| ID | Scenario Title | Area | Test Steps (E2E Journey) | Expected Outcome | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-T01** | E2E State Recovery (Error -> 200) | Transition | 1. Run deterministic `BS1 4DJ` failure lookup.<br>2. Transition from UI Error pane to clicking 'Retry'.<br>3. Process the recovered 200 response straight through to checkout. | Internal state components correctly shift from Error bounds back into loading grids effortlessly allowing booking completion. | ✅ Pass |
-| **TC-T02** | Deep Backwards Navigation Extraction | Transition | 1. Methodically construct a path to Review (Step 4).<br>2. Methodically click 'Back' sequentially pushing backwards all the way to Step 1.<br>3. Verify values. | Redux/Session bindings repopulate every single radio button properly traversing the component lifecycle backwards. | ✅ Pass |
-| **TC-T03** | Dynamic Constraint Unlocking Pipeline | Transition | 1. Drive flow tagging 'Heavy Waste' across Step 2.<br>2. Verify '12-yard' is disabled on Step 3.<br>3. Walk BACK to Step 2 & replace selection with 'General'.<br>4. Walk FORWARD to Step 3. | 12-yard skips are re-computed and visually transition to interactive cleanly proving cross-step prop cascades. | ✅ Pass |
-| **TC-T04** | Parent Switch Cascade Destruction | Transition | 1. Drive flow to Step 3 selecting skips based on SW1A 1AA.<br>2. Leap backwards to Step 1 and change postcode completely to `EC1A 1BB`.<br>3. Proceed forward. | Downstream address, waste, and skip targets are permanently purged preventing incompatible parameter bleed across geographies. | ✅ Pass |
-| **TC-T05** | Form Sub-Option Collapse Integrity | Transition | 1. On Step 2, click 'Plasterboard' causing the 3 volume radios to transition in.<br>2. Select 'Under 10%'.<br>3. Uncheck 'Plasterboard' completely. | The nested components transition entirely from the DOM, guaranteeing removed components are scrubbed from local payload memory. | ✅ Pass |
+| ID | Title | Priority | Preconditions | Steps | Expected | Status |
+| :--- | :--- | :---: | :--- | :--- | :--- | :---: |
+| **P-01** | Standard SW1A 1AA → general → 4-yard booking succeeds | P1 | Fresh tab. | 1. Open `/`.<br>2. Type `SW1A 1AA`. Click **Find address**.<br>3. Select `10 Downing Street`. Click **Continue**.<br>4. Tick **General waste**. Click **Continue**.<br>5. Click the **4 Yard Skip** card. Click **Continue**.<br>6. On Review, click **Confirm booking**. | Success screen renders with a booking ID matching `BK-\d+`. | ✅ Pass |
+| **P-02** | Heavy waste journey emits `heavyWaste:true` payload | P1 | Fresh tab. DevTools Network open, filter `confirm`. | 1. Look up `SW1A 1AA`. Pick any address. Continue.<br>2. Tick **Heavy waste** only (leave General and Plasterboard unticked). Continue.<br>3. Pick the **6 Yard Skip**. Continue.<br>4. Click **Confirm booking**. | Success screen shown. The recorded `POST /api/booking/confirm` request body contains `"heavyWaste": true` and `"plasterboard": false`. | ✅ Pass |
+| **P-03** | Plasterboard < 10% emits `plasterboardOption:"under_10"` | P1 | Fresh tab. DevTools Network open. | 1. Look up `SW1A 1AA`. Pick any address. Continue.<br>2. Tick **Plasterboard**. Select **Under 10% of load**. Continue.<br>3. Pick the **8 Yard Skip**. Continue.<br>4. Confirm. | Success. The waste-types and confirm requests both contain `"plasterboardOption": "under_10"`. Review summary shows `Plasterboard (Under 10% of load)`. | ✅ Pass |
+| **P-04** | Plasterboard 10–25% emits `plasterboardOption:"10_to_25"` | P2 | Fresh tab. | 1. Look up `SW1A 1AA`. Pick any address. Continue.<br>2. Tick **Plasterboard**. Select **10–25% of load**. Continue.<br>3. Pick any enabled skip. Continue.<br>4. Confirm. | Success. Confirm request contains `"plasterboardOption": "10_to_25"`. Review reads `Plasterboard (10–25% of load)`. | ✅ Pass |
+| **P-05** | Plasterboard > 25% emits `plasterboardOption:"over_25"` | P2 | Fresh tab. | 1. Look up `SW1A 1AA`. Pick any address. Continue.<br>2. Tick **Plasterboard**. Select **Over 25% of load**. Continue.<br>3. Pick any enabled skip. Continue.<br>4. Confirm. | Success. Confirm request contains `"plasterboardOption": "over_25"`. Review reads `Plasterboard (Over 25% of load)`. | ✅ Pass |
+| **P-06** | Heavy + plasterboard combined accepted | P2 | Fresh tab. | 1. Look up `SW1A 1AA`. Pick any address. Continue.<br>2. Tick **Heavy waste** AND **Plasterboard** → **Under 10% of load**. Continue.<br>3. Pick the **6 Yard Skip**. Continue.<br>4. Confirm. | Success. Confirm body contains both `"heavyWaste": true` and `"plasterboard": true`. Review summary lists both lines. | ✅ Pass |
+| **P-07** | Empty postcode → manual entry fallback succeeds | P1 | Fresh tab. | 1. Type `EC1A 1BB`. Click **Find address**.<br>2. Click **Enter address manually**.<br>3. Fill `Address line 1` = `1 Test Street`, `City` = `Testville`. Click **Continue**.<br>4. Tick **General waste**. Continue.<br>5. Pick **4 Yard Skip**. Continue.<br>6. Confirm. | Success. Review summary shows `1 Test Street, Testville (EC1A 1BB)`. Confirm body `addressId` starts with `manual_`. | ✅ Pass |
+| **P-08** | Book-again resets state to a clean Step 1 | P2 | Completed booking on screen (run P-01 first). | 1. On the success screen, click **Book another skip**.<br>2. Look up `SW1A 1AA`. Pick any address. Continue.<br>3. Tick **General waste**. Continue.<br>4. Pick **4 Yard Skip**. Continue.<br>5. Confirm. | A second success screen renders with a booking ID **different** from the first run's. | ✅ Pass |
+| **P-09** | Largest skip (20-yard) bookable under general waste | P3 | Fresh tab. | 1. Look up `SW1A 1AA`. Pick any address. Continue.<br>2. Tick **General waste**. Continue.<br>3. Pick the **20 Yard Skip**. Continue.<br>4. Confirm. | Success. Review and confirm body show `"skipSize": "20-yard"` and `"price": 480`. | ✅ Pass |
+| **P-10** | Smallest skip (4-yard) bookable under general waste | P3 | Fresh tab. | 1. Look up `SW1A 1AA`. Pick any address. Continue.<br>2. Tick **General waste**. Continue.<br>3. Pick the **4 Yard Skip**. Continue.<br>4. Confirm. | Success. Confirm body shows `"skipSize": "4-yard"` and `"price": 120`. | ✅ Pass |
+| **P-11** | Price breakdown sums correctly (8-yard) | P1 | Fresh tab. | 1. Look up `SW1A 1AA`. Pick any address. Continue.<br>2. Tick **General waste**. Continue.<br>3. Pick the **8 Yard Skip** (£230). Continue.<br>4. On Review, read each row of the price-breakdown panel. | Skip = `£230.00`, Permit = `£30.00`, Subtotal = `£260.00`, VAT (20%) = `£52.00`, Total = `£312.00`. Subtotal == skip + permit. Total == subtotal + vat. | ✅ Pass |
 
 ---
-**End of Full E2E Execution Plan**
+
+## N — Negative paths (10)
+
+| ID | Title | Priority | Preconditions | Steps | Expected | Status |
+| :--- | :--- | :---: | :--- | :--- | :--- | :---: |
+| **N-01** | Invalid postcode format blocked client-side | P1 | Fresh tab. DevTools Network open. | 1. Type `QWERTY 123`.<br>2. Click **Find address**. | A `role="alert"` element appears reading "Enter a valid UK postcode". No `POST /api/postcode/lookup` request is sent. No address list, no spinner. | ✅ Pass |
+| **N-02** | Empty address list (EC1A 1BB) cannot be bypassed without manual entry | P1 | Fresh tab. | 1. Type `EC1A 1BB`. Click **Find address**.<br>2. Verify the empty-state message is visible.<br>3. Without filling the manual-entry form, attempt to advance (no Continue button should be visible). | No **Continue** button is rendered. The only forward path is the **Enter address manually** button. The user cannot reach Step 2. | ✅ Pass |
+| **N-03** | Step 2 Continue with no waste-type selection is blocked | P1 | At Step 2 (look up `SW1A 1AA`, pick any address, Continue). | 1. Leave all three waste-type checkboxes unticked.<br>2. Click **Continue**. | An inline alert appears: "Select at least one waste type to continue." Step does not advance. No `POST /api/waste-types` is sent. | ✅ Pass |
+| **N-04** | Plasterboard ticked without a handling option is blocked | P1 | At Step 2. | 1. Tick **Plasterboard**.<br>2. Without selecting any of the three handling options, click **Continue**. | Inline alert: "Choose how much plasterboard is in your load." Step does not advance. | ✅ Pass |
+| **N-05** | Step 3 Continue with no skip selected is blocked | P1 | At Step 3 (postcode → address → general waste → Continue). | 1. Click **Continue** without picking any skip card. | The **Continue** button is `disabled`. Clicking has no effect. | ✅ Pass |
+| **N-06** | Disabled (heavy-waste-blocked) skip card cannot be selected | P1 | At Step 3 with **Heavy waste** chosen at Step 2. | 1. Locate the `12 Yard Skip` card (rendered with greyed style and reason text).<br>2. Click on its surface. | The card has `aria-disabled="true"`. Click is a no-op: `aria-checked` remains `false`. **Continue** stays disabled. The reason text "Not available for heavy waste" is visible. | ✅ Pass |
+| **N-07** | Manual address entry with empty Line 1 is blocked | P2 | Empty postcode flow open (look up `EC1A 1BB`, click **Enter address manually**). | 1. Leave `Address line 1` empty. Fill `City` with `Testville`.<br>2. Click **Continue**. | Inline `role="alert"` reads "Enter the first line of your address." Step does not advance. | ✅ Pass |
+| **N-08** | Rapid double-click on Confirm sends exactly one request | P1 | At Step 4 with a complete booking (postcode → address → general → 4-yard → Continue). DevTools Network open, filter `/api/booking/confirm`. | 1. Throttle network to "Slow 3G" (DevTools → Network → Throttling).<br>2. Click **Confirm booking** twice as fast as possible. | Exactly **one** `POST /api/booking/confirm` request is recorded. Button label flips to "Confirming…" and `disabled`. Success screen renders with one booking ID. | ✅ Pass |
+| **N-09** | Confirm with `postcode` field stripped returns 400 | P2 | At Step 4 with a complete booking. DevTools open. Source-tab → "Override request". | 1. Set up an override that drops the `postcode` field from the `POST /api/booking/confirm` body.<br>2. Click **Confirm booking**. | Response is HTTP 400 with `{"error":"INVALID_PAYLOAD"}`. UI shows a "Booking failed" alert with a Retry button. Success screen is not reached. | ✅ Pass |
+| **N-10** | Confirm with tampered `price` is rejected with `PRICE_MISMATCH` | P1 | At Step 4 with an 8-yard skip selected (catalogue price £230). DevTools open. | 1. Use a fetch override (or DevTools "Override response" plus a request rewriter) to change `"price": 230` to `"price": 10` in the outbound `POST /api/booking/confirm` body.<br>2. Click **Confirm booking**. | Response is HTTP 400 with `{"error":"PRICE_MISMATCH"}`. UI shows a "Booking failed" alert. Success screen is not reached. Covered by automated `tests/e2e/step4-review.spec.ts::TC-N10` and `tests/api/booking-confirm.spec.ts::tampered price`. | ✅ Pass |
+
+---
+
+## E — Edge cases (6)
+
+| ID | Title | Priority | Preconditions | Steps | Expected | Status |
+| :--- | :--- | :---: | :--- | :--- | :--- | :---: |
+| **E-01** | Lowercase postcode is normalised to canonical form | P2 | Fresh tab. DevTools Network open. | 1. Type `sw1a 1aa` (all lowercase).<br>2. Click **Find address**. | The outgoing request body's `postcode` field equals `SW1A 1AA` (canonical case). 14 addresses render. | ✅ Pass |
+| **E-02** | Excess whitespace around postcode is trimmed | P2 | Fresh tab. | 1. Type `   SW1A   1AA   `.<br>2. Click **Find address**. | Address list renders normally. The form does not error. The request is sent with the trimmed canonical postcode. | ✅ Pass |
+| **E-03** | Rapid skip toggling captures the final selection | P3 | At Step 3 (postcode → address → general → Continue). | 1. Click the **4 Yard Skip** card.<br>2. Click the **6 Yard Skip** card.<br>3. Repeat clicks alternating 4-yard / 6-yard 20+ times.<br>4. End on **6 Yard Skip**. Click **Continue**. | Review summary reads `6 Yard Skip`. Confirm body's `skipSize` is `6-yard`. No console errors. | ✅ Pass |
+| **E-04** | Manual-entry city renders as text, not HTML (XSS guard) | P1 | Empty postcode flow open (look up `EC1A 1BB` → **Enter address manually**). | 1. Fill `Address line 1` = `1 Test Street`.<br>2. Fill `City` = `<script>alert('XSS')</script>`.<br>3. Continue. Tick **General waste**. Continue. Pick any skip. Continue. | No JavaScript alert fires. The Review summary's address line literally contains the string `<script>alert('XSS')</script>` rendered as text. | ✅ Pass |
+| **E-05** | Hard refresh mid-flow returns to Step 1 (documented limitation) | P3 | At Step 3 (any complete prior selections). | 1. Press Cmd-R / Ctrl-R to hard refresh the tab. | Page reloads to Step 1 with empty inputs. No console errors, no broken half-rendered components. Documented as a known limitation in `README.md` § "Known limitations". | ✅ Pass |
+| **E-06** | Confirm while offline surfaces a recoverable error | P2 | At Step 4 with a complete booking. DevTools Network open. | 1. In DevTools → Network, set throttling to **Offline**.<br>2. Click **Confirm booking**. | Spinner appears briefly then disappears. A "Booking failed" alert with a **Retry** button is shown. The Confirm button re-enables (or the Retry button takes over). Switching back to "No throttling" and clicking Retry succeeds. | ✅ Pass |
+
+---
+
+## A — API failure injections (4)
+
+| ID | Title | Priority | Preconditions | Steps | Expected | Status |
+| :--- | :--- | :---: | :--- | :--- | :--- | :---: |
+| **A-01** | Postcode lookup 500 (BS1 4DJ deterministic fixture) shows error + Retry | P1 | Fresh tab (so the BS1 retry counter is reset). | 1. Type `BS1 4DJ`. Click **Find address**. | A `role="alert"` shows an error message. A **Retry** button is visible. The address list is hidden. The Network tab shows one 500 response from `POST /api/postcode/lookup`. | ✅ Pass |
+| **A-02** | Waste-types 500 shows error and allows Retry | P2 | At Step 2. DevTools open with a one-shot override mapping `POST /api/waste-types` to **500 Internal Server Error**. | 1. Tick **General waste**. Click **Continue**. | Spinner appears briefly, then a "Couldn't save selection" alert with a **Retry** button. Step does not advance. Removing the override and clicking **Retry** succeeds and advances to Step 3. | ✅ Pass |
+| **A-03** | Skips 500 shows error and allows Retry | P2 | At Step 3. DevTools open with a one-shot override mapping `GET /api/skips*` to **500 Internal Server Error**. | 1. Reach Step 3 (postcode → address → general → Continue). The skip page attempts to load. | Spinner appears, then a "Couldn't load skips" alert with a **Retry** button. No skip cards render. **Continue** is not visible. Removing the override and clicking **Retry** succeeds. | ✅ Pass |
+| **A-04** | Booking confirm 500 shows error and allows Retry | P1 | At Step 4 with a complete booking. DevTools open with a one-shot override mapping `POST /api/booking/confirm` to **500 Internal Server Error**. | 1. Click **Confirm booking**. | Spinner appears briefly, then a "Booking failed" alert with a **Retry** button. The user's selections are preserved. Removing the override and clicking **Retry** succeeds and shows the success screen. | ✅ Pass |
+
+---
+
+## T — State transitions (5)
+
+| ID | Title | Priority | Preconditions | Steps | Expected | Status |
+| :--- | :--- | :---: | :--- | :--- | :--- | :---: |
+| **T-01** | BS1 4DJ recovers from 500 → 200 within the same Step 1 view | P1 | Fresh tab. | 1. Type `BS1 4DJ`. Click **Find address** (first call returns 500).<br>2. Click **Retry**. | The error alert disappears. A new `POST /api/postcode/lookup` request returns 200 with 6 Bristol addresses. The list is rendered. The user can select an address and continue. | ✅ Pass |
+| **T-02** | Back navigation through every step preserves prior selections | P1 | Completed flow at Step 4 (postcode → address → general → 4-yard → reach Review). | 1. Click **Back** on Step 4.<br>2. On Step 3, verify the **4 Yard Skip** card has `aria-checked="true"`. Click **Back**.<br>3. On Step 2, verify the **General waste** checkbox is ticked. Click **Back**.<br>4. On Step 1, verify the postcode input still reads `SW1A 1AA` and the previously selected address radio is still checked. | All four prior selections are still visible at each back-step. No data loss. | ✅ Pass |
+| **T-03** | Toggling Heavy off after viewing disabled skips re-enables them | P1 | Reached Step 3 with **Heavy waste** ON. The 10-yard, 12-yard and 14-yard cards are visibly disabled. | 1. Click **Back** to return to Step 2.<br>2. Untick **Heavy waste**. Tick **General waste**. Click **Continue**.<br>3. On Step 3, inspect the same three cards. | All three previously-disabled cards now have `aria-disabled="false"` and no greyed style. They are clickable. The "Some larger skips are unavailable for heavy waste" notice is gone. | ✅ Pass |
+| **T-04** | Changing postcode after reaching Step 3 clears the downstream skip selection | P2 | Reached Step 3 with `SW1A 1AA` → an address → general waste, and selected the **4 Yard Skip**. | 1. Click **Back** twice to return to Step 1.<br>2. Change the postcode field to `EC1A 1BB`. Click **Find address**.<br>3. The empty-state appears. Click **Enter address manually**, fill the form with any valid values, Continue.<br>4. Tick **General waste**. Continue. | On Step 3, no skip is pre-selected (`aria-checked="true"` count is 0). **Continue** is disabled. The previous 4-yard pick has been cleared because the address ID changed. | ✅ Pass |
+| **T-05** | Unticking Plasterboard removes the handling option from the payload | P1 | At Step 2. DevTools Network open. | 1. Tick **Plasterboard**. Select **Under 10% of load**. The handling-options panel is visible.<br>2. Untick **Plasterboard**. The handling-options panel collapses out of the DOM.<br>3. Tick **General waste**. Click **Continue**. | The handling panel is no longer in the DOM after step 2. The recorded `POST /api/waste-types` body contains `"plasterboard": false` and `"plasterboardOption": null` (the prior `under_10` value did **not** bleed through). | ✅ Pass |
+
+---
+
+## Execution log
+
+- All cases above were executed against build `2026-04-17:milestone-4` on the deployed Pages URL (`Chromium 131`, macOS 15.3, viewport 1280×800) and on iPhone 12 simulator via Playwright Device emulation for any case marked mobile-relevant.
+- Failures during execution were converted into bug reports — see [bug-reports.md](bug-reports.md). BUG-001 and BUG-004 were caught by N-04 / re-run of P-01 respectively, fixed in subsequent milestones, and now have automated regression coverage.
+- Cases A-01 / T-01 are the only ones whose first-run vs second-run behaviour depends on the BS1 retry counter — see BUG-003 for the demo-fidelity caveat. Hard-refresh the tab between consecutive runs of these cases.
+
+**End of plan.**
