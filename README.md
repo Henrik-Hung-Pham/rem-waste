@@ -45,7 +45,7 @@ rem-waste/
 ├── CLAUDE.md                  # project orientation
 ├── docs/test-strategy.md      # which flows get automated + manual bucketing
 ├── README.md                  # this file
-├── manual-tests.md            # 36 manual test cases (§6 ≥35)
+├── manual-tests.md            # 39 manual test cases (§6 ≥35)
 ├── bug-reports.md             # 3 real bug reports (§7 ≥3, ≥1 state-transition)
 ├── ui/                        # React + Vite + TS app + MSW mocks
 ├── automation/                # Playwright + TS test suite (57 tests × 7-browser matrix in CI)
@@ -98,13 +98,13 @@ Assertions fire at every step. Selectors follow a strict priority — accessible
 
 ### Manual (§6)
 
-[manual-tests.md](./manual-tests.md) — **36 cases** grouped by category, bucketed as:
+[manual-tests.md](./manual-tests.md) — **39 cases** grouped by category, bucketed as:
 
 | Bucket | Count | Minimum |
 | --- | --- | --- |
-| Negative | 10 | ≥10 |
-| Edge | 6 | ≥6 |
-| API-failure | 4 | ≥4 |
+| Negative | 11 | ≥10 |
+| Edge | 7 | ≥6 |
+| API-failure | 5 | ≥4 |
 | State-transition | 5 | ≥4 |
 | Positive | 11 | — |
 
@@ -134,8 +134,8 @@ All artefacts in [evidence/](./evidence/):
 | Mobile screenshots (375×667) | `evidence/screenshots/mobile/` | 8 frames — same flow, mobile viewport |
 | Flow A video | [`evidence/video/flow-a.mp4`](./evidence/video/flow-a.mp4) | Flow A: SW1A 1AA → General waste → 4-yard → confirm. <br><video src="./evidence/video/flow-a.mp4" controls width="400"></video> |
 | Flow B video | [`evidence/video/flow-b.mp4`](./evidence/video/flow-b.mp4) | Flow B: BS1 4DJ retry → heavy + plasterboard → disabled skips → confirm. <br><video src="./evidence/video/flow-b.mp4" controls width="400"></video> |
-| Lighthouse — desktop | `evidence/lighthouse/desktop.report.html` | **Perf 100 · A11y 100 · Best-Practices 100 · SEO 91** |
-| Lighthouse — mobile | `evidence/lighthouse/mobile.report.html` | **Perf 99 · A11y 100 · Best-Practices 100 · SEO 91** |
+| Lighthouse — desktop | `evidence/lighthouse/desktop.report.html` | **Perf 99 · A11y 100 · Best-Practices 100 · SEO 100** |
+| Lighthouse — mobile | `evidence/lighthouse/mobile.report.html` | **Perf 92 · A11y 100 · Best-Practices 100 · SEO 100** |
 | Accessibility (axe) | `evidence/a11y/step{1..4}.json` + `summary.json` | **0 violations** (0 critical, 0 serious) across every step, tags `wcag2a` + `wcag2aa` |
 
 Lighthouse reports are against the **production preview build** (`npm run build && npm run preview`) — that's what deploys. Dev-server figures are lower due to HMR and unminified code.

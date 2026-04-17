@@ -75,16 +75,18 @@ Short, fast, complement the E2E flows. One spec per endpoint hitting the `reques
 
 ## Manual-test bucketing (§6 — ≥35 total)
 
-Concrete distribution. Sub-minima met with ~10% margin on each. Totals: **38 cases · 10 positive · 11 negative · 7 edge · 5 API-failure · 5 state-transition**.
+Final delivered distribution (see [manual-tests.md](../manual-tests.md)). Every sub-minimum hit with margin. Totals: **39 cases · 11 positive · 11 negative · 7 edge · 5 API-failure · 5 state-transition**.
 
-| Area           | Positive | Negative | Edge | API-fail | State-trans | **Total** |
-| -------------- | -------- | -------- | ---- | -------- | ----------- | --------- |
-| Postcode       | 2        | 4        | 2    | 2        | 1           | 11        |
-| Waste Type     | 2        | 2        | 1    | 1        | 1           | 7         |
-| Skip           | 2        | 2        | 2    | 1        | 1           | 8         |
-| Review         | 2        | 2        | 1    | 1        | 1           | 7         |
-| Cross-cutting  | 2        | 1        | 1    | 0        | 1           | 5         |
-| **Total**      | **10**   | **11**   | **7**| **5**    | **5**       | **38**    |
+The file groups by bucket (prefix `P`/`N`/`E`/`A`/`T`) rather than by step-area — execution order mirrors risk rather than UI structure. The per-area table below was the planning sketch; refer to `manual-tests.md` for the actual executed cases.
+
+| Bucket             | Required | Delivered | Margin |
+| ------------------ | :------: | :-------: | :----: |
+| Positive           |    —     |    11     |   —    |
+| Negative           |    10    |    11     |   +1   |
+| Edge               |     6    |     7     |   +1   |
+| API-failure        |     4    |     5     |   +1   |
+| State-transition   |     4    |     5     |   +1   |
+| **Total**          |    35    |    **39** |  +4    |
 
 ### Example case titles per cell (sketch — `manual-test-author` expands)
 

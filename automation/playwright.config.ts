@@ -34,51 +34,13 @@ export default defineConfig({
     navigationTimeout: 30_000,
   },
   projects: [
-    {
-      name: 'chromium',
-      testIgnore: /tests\/evidence\/.*/,
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      testIgnore: /tests\/evidence\/.*/,
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      testIgnore: /tests\/evidence\/.*/,
-      use: { ...devices['Desktop Safari'] },
-    },
-    {
-      name: 'mobile-chrome',
-      testIgnore: /tests\/evidence\/.*/,
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'mobile-safari',
-      testIgnore: /tests\/evidence\/.*/,
-      use: { ...devices['iPhone 12'] },
-    },
-    {
-      name: 'google-chrome',
-      testIgnore: /tests\/evidence\/.*/,
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    },
-    {
-      name: 'microsoft-edge',
-      testIgnore: /tests\/evidence\/.*/,
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    },
-    {
-      // Evidence project — runs the capture specs with video always on.
-      name: 'evidence',
-      testMatch: /tests\/evidence\/.*\.spec\.ts/,
-      use: {
-        ...devices['Desktop Chrome'],
-        video: 'on' as const,
-      },
-      timeout: 90_000,
-    },
+    { name: 'chromium',       use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox',        use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit',         use: { ...devices['Desktop Safari'] } },
+    { name: 'mobile-chrome',  use: { ...devices['Pixel 5'] } },
+    { name: 'mobile-safari',  use: { ...devices['iPhone 12'] } },
+    { name: 'google-chrome',  use: { ...devices['Desktop Chrome'], channel: 'chrome' } },
+    { name: 'microsoft-edge', use: { ...devices['Desktop Edge'],   channel: 'msedge' } },
   ].filter((p) => !PROJECT_FILTER || PROJECT_FILTER.includes(p.name)),
   webServer: IS_LOCAL
     ? {

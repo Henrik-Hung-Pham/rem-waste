@@ -24,11 +24,17 @@ export const test = base.extend<Fixtures>({
       undefined,
       { timeout: 10_000 },
     );
-    // Best-effort mock reset. This endpoint is MSW-handled in the browser but
-    // `page.request` hits the origin Node-side and bypasses the SW, so against
-    // the Pages deploy it 404s. Each Playwright context starts with a fresh SW
-    // registration, so isolation is preserved either way.
-    await page.request.post('/_mocks/reset').catch(() => undefined);
+    // Reset MSW counters through the browser's fetch so the service worker
+    // intercepts it. `page.request` bypasses the SW and 404s against the Pages
+    // deploy; `page.evaluate(() => fetch(...))` goes through the SW in both
+    // dev and deployed environments.
+    await page
+      .evaluate(() =>
+        fetch('/_mocks/reset', { method: 'POST' })
+          .then((r) => r.ok)
+          .catch(() => false),
+      )
+      .catch(() => undefined);
     await use(page);
   },
   postcodePage: async ({ freshPage }, use) => {

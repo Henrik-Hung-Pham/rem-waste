@@ -75,6 +75,7 @@ test('Flow A — SW1A 1AA → general waste → 4-yard → confirm booking', asy
   expect(breakdown.total).toBeCloseTo(breakdown.subtotal + breakdown.vat, 2);
 
   // Count every confirm request fired during a deliberate double-click.
+  // Register the listener BEFORE any click so the first request can't race it.
   let confirmRequestCount = 0;
   page.on('request', (req) => {
     if (req.url().endsWith('/api/booking/confirm') && req.method() === 'POST') {
@@ -82,16 +83,13 @@ test('Flow A — SW1A 1AA → general waste → 4-yard → confirm booking', asy
     }
   });
 
-  const [confirmRequest] = await Promise.all([
-    page.waitForRequest(
-      (req) => req.url().endsWith('/api/booking/confirm') && req.method() === 'POST',
-    ),
-    (async () => {
-      await reviewPage.confirmButton.click();
-      // Second click should be a no-op — button must disable on first click.
-      await reviewPage.confirmButton.click({ force: true, trial: false }).catch(() => {});
-    })(),
-  ]);
+  const confirmRequestPromise = page.waitForRequest(
+    (req) => req.url().endsWith('/api/booking/confirm') && req.method() === 'POST',
+  );
+  await reviewPage.confirmButton.click();
+  // Second click should be a no-op — button must disable on first click.
+  await reviewPage.confirmButton.click({ force: true, trial: false }).catch(() => {});
+  const confirmRequest = await confirmRequestPromise;
   const confirmBody = confirmRequest.postDataJSON();
   expect(confirmBody).toMatchObject({
     postcode: 'SW1A 1AA',

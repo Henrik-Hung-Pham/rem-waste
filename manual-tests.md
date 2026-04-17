@@ -12,11 +12,11 @@
 
 | Bucket | Required | Delivered |
 | :--- | :---: | :---: |
-| **Total** | 35 | **36** |
+| **Total** | 35 | **39** |
 | Positive (happy paths) | — | 11 |
-| Negative (block / reject) | 10 | **10** |
-| Edge (boundaries / unusual input) | 6 | **6** |
-| API failure (5xx / 4xx injection) | 4 | **4** |
+| Negative (block / reject) | 10 | **11** |
+| Edge (boundaries / unusual input) | 6 | **7** |
+| API failure (5xx / 4xx injection) | 4 | **5** |
 | State transition (cross-step state) | 4 | **5** |
 
 ## How to read this file
@@ -47,7 +47,7 @@
 
 ---
 
-## N — Negative paths (10)
+## N — Negative paths (11)
 
 | ID | Title | Priority | Preconditions | Steps | Expected | Status |
 | :--- | :--- | :---: | :--- | :--- | :--- | :---: |
@@ -61,10 +61,11 @@
 | **N-08** | Rapid double-click on Confirm sends exactly one request | P1 | At Step 4 with a complete booking (postcode → address → general → 4-yard → Continue). DevTools Network open, filter `/api/booking/confirm`. | 1. Throttle network to "Slow 3G" (DevTools → Network → Throttling).<br>2. Click **Confirm booking** twice as fast as possible. | Exactly **one** `POST /api/booking/confirm` request is recorded. Button label flips to "Confirming…" and `disabled`. Success screen renders with one booking ID. | ✅ Pass |
 | **N-09** | Confirm with `postcode` field stripped returns 400 | P2 | At Step 4 with a complete booking. DevTools open. Source-tab → "Override request". | 1. Set up an override that drops the `postcode` field from the `POST /api/booking/confirm` body.<br>2. Click **Confirm booking**. | Response is HTTP 400 with `{"error":"INVALID_PAYLOAD"}`. UI shows a "Booking failed" alert with a Retry button. Success screen is not reached. | ✅ Pass |
 | **N-10** | Confirm with tampered `price` is rejected with `PRICE_MISMATCH` | P1 | At Step 4 with an 8-yard skip selected (catalogue price £230). DevTools open. | 1. Use a fetch override (or DevTools "Override response" plus a request rewriter) to change `"price": 230` to `"price": 10` in the outbound `POST /api/booking/confirm` body.<br>2. Click **Confirm booking**. | Response is HTTP 400 with `{"error":"PRICE_MISMATCH"}`. UI shows a "Booking failed" alert. Success screen is not reached. Covered by automated `tests/e2e/step4-review.spec.ts::TC-N10` and `tests/api/booking-confirm.spec.ts::tampered price`. | ✅ Pass |
+| **N-11** | Manual address entry with empty City is blocked | P2 | Empty postcode flow open (look up `EC1A 1BB`, click **Enter address manually**). | 1. Fill `Address line 1` = `1 Test Street`. Leave `City` empty.<br>2. Click **Continue**. | Inline `role="alert"` reads "Enter a city or town." Step does not advance. No downstream request is sent. | ✅ Pass |
 
 ---
 
-## E — Edge cases (6)
+## E — Edge cases (7)
 
 | ID | Title | Priority | Preconditions | Steps | Expected | Status |
 | :--- | :--- | :---: | :--- | :--- | :--- | :---: |
@@ -74,10 +75,11 @@
 | **E-04** | Manual-entry city renders as text, not HTML (XSS guard) | P1 | Empty postcode flow open (look up `EC1A 1BB` → **Enter address manually**). | 1. Fill `Address line 1` = `1 Test Street`.<br>2. Fill `City` = `<script>alert('XSS')</script>`.<br>3. Continue. Tick **General waste**. Continue. Pick any skip. Continue. | No JavaScript alert fires. The Review summary's address line literally contains the string `<script>alert('XSS')</script>` rendered as text. | ✅ Pass |
 | **E-05** | Hard refresh mid-flow returns to Step 1 (documented limitation) | P3 | At Step 3 (any complete prior selections). | 1. Press Cmd-R / Ctrl-R to hard refresh the tab. | Page reloads to Step 1 with empty inputs. No console errors, no broken half-rendered components. Documented as a known limitation in `README.md` § "Known limitations". | ✅ Pass |
 | **E-06** | Confirm while offline surfaces a recoverable error | P2 | At Step 4 with a complete booking. DevTools Network open. | 1. In DevTools → Network, set throttling to **Offline**.<br>2. Click **Confirm booking**. | Spinner appears briefly then disappears. A "Booking failed" alert with a **Retry** button is shown. The Confirm button re-enables (or the Retry button takes over). Switching back to "No throttling" and clicking Retry succeeds. | ✅ Pass |
+| **E-07** | Unicode characters in manual City render as plain text in Review | P3 | Empty postcode flow open (look up `EC1A 1BB` → **Enter address manually**). | 1. Fill `Address line 1` = `1 Rue de l'Église`.<br>2. Fill `City` = `São Paulo — 北京`.<br>3. Continue. Tick **General waste**. Continue. Pick any skip. Continue. | The Review summary's address line displays the exact unicode string (accents, em-dash, Chinese characters) as rendered text. No mojibake, no console encoding warnings. | ✅ Pass |
 
 ---
 
-## A — API failure injections (4)
+## A — API failure injections (5)
 
 | ID | Title | Priority | Preconditions | Steps | Expected | Status |
 | :--- | :--- | :---: | :--- | :--- | :--- | :---: |
@@ -85,6 +87,7 @@
 | **A-02** | Waste-types 500 shows error and allows Retry | P2 | At Step 2. DevTools open with a one-shot override mapping `POST /api/waste-types` to **500 Internal Server Error**. | 1. Tick **General waste**. Click **Continue**. | Spinner appears briefly, then a "Couldn't save selection" alert with a **Retry** button. Step does not advance. Removing the override and clicking **Retry** succeeds and advances to Step 3. | ✅ Pass |
 | **A-03** | Skips 500 shows error and allows Retry | P2 | At Step 3. DevTools open with a one-shot override mapping `GET /api/skips*` to **500 Internal Server Error**. | 1. Reach Step 3 (postcode → address → general → Continue). The skip page attempts to load. | Spinner appears, then a "Couldn't load skips" alert with a **Retry** button. No skip cards render. **Continue** is not visible. Removing the override and clicking **Retry** succeeds. | ✅ Pass |
 | **A-04** | Booking confirm 500 shows error and allows Retry | P1 | At Step 4 with a complete booking. DevTools open with a one-shot override mapping `POST /api/booking/confirm` to **500 Internal Server Error**. | 1. Click **Confirm booking**. | Spinner appears briefly, then a "Booking failed" alert with a **Retry** button. The user's selections are preserved. Removing the override and clicking **Retry** succeeds and shows the success screen. | ✅ Pass |
+| **A-05** | Booking confirm 400 (INVALID_PAYLOAD) surfaces an actionable error without Retry loop | P2 | At Step 4 with a complete booking. DevTools open with a fetch override that strips the `addressId` field from the outbound `POST /api/booking/confirm` body. | 1. Click **Confirm booking**. | Response is HTTP 400 with `{"error":"INVALID_PAYLOAD"}`. UI shows a "Booking failed" alert (non-5xx message variant). Success screen is not reached. Re-clicking Retry without removing the override does not silently succeed — the 400 recurs, proving the error is surfaced per-attempt rather than suppressed. | ✅ Pass |
 
 ---
 
