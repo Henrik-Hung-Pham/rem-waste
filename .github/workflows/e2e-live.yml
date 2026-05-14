@@ -1,7 +1,7 @@
 name: E2E (live Pages)
 
 # Runs the Playwright suite against the deployed GitHub Pages site at
-# https://jason-pham.github.io/rem-waste/ across four browser projects.
+# https://henrik-hung-pham.github.io/rem-waste/ across four browser projects.
 #
 # Triggers:
 #   - workflow_run: fires after "Deploy to GitHub Pages" completes, so every
@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 env:
-  LIVE_URL: https://jason-pham.github.io/rem-waste/
+  LIVE_URL: https://henrik-hung-pham.github.io/rem-waste/
 
 jobs:
   # -------------------------------------------------------------------------
@@ -113,7 +113,7 @@ jobs:
         working-directory: automation
 
     env:
-      BASE_URL: https://jason-pham.github.io/rem-waste/
+      BASE_URL: https://henrik-hung-pham.github.io/rem-waste/
       PROJECTS: ${{ matrix.project }}
       CI: 'true'
 

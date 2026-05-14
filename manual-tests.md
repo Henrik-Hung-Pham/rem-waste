@@ -3,7 +3,7 @@
 > **Scope**: end-to-end manual coverage of the 4-step skip-booking flow (postcode → waste → skip → review) plus its branching, error and state-transition behaviours.
 > **Owner**: QA — author / executor on each row.
 > **Build under test**: `2026-04-17:milestone-4` (matches the deployed Pages bundle).
-> **Environment**: Production demo at `https://jason-pham.github.io/rem-waste/`. Local mirror: `cd ui && npm run dev` → `http://localhost:5173`.
+> **Environment**: Production demo at `https://henrik-hung-pham.github.io/rem-waste/`. Local mirror: `cd ui && npm run dev` → `http://localhost:5173`.
 > **Mocking**: MSW service-worker in-browser, fixtures per `ASSESSMENT.md §4`. No real backend.
 > **Requirement mapping**: `ASSESSMENT.md §6` — ≥35 total, ≥10 negative, ≥6 edge, ≥4 API-failure, ≥4 state-transition. Strict markdown tables.
 > **Reset between cases**: hard refresh the tab (or, in DevTools console, `await fetch('/_mocks/reset', { method: 'POST' })`) so MSW counters return to a clean slate.

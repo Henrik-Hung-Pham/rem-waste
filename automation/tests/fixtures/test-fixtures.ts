@@ -16,7 +16,7 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
   freshPage: async ({ page }, use) => {
     // './' resolves to baseURL for both local ('http://localhost:5173/') and
-    // the Pages deploy ('https://jason-pham.github.io/rem-waste/'). Plain '/'
+    // the Pages deploy ('https://henrik-hung-pham.github.io/rem-waste/'). Plain '/'
     // would escape the /rem-waste/ sub-path on Pages.
     await page.goto('./');
     await page.waitForFunction(

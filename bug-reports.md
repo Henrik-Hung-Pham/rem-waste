@@ -37,7 +37,7 @@ Kept in this report for traceability — the state-transition class requirement 
 
 | Field | Value |
 | --- | --- |
-| URL | `https://jason-pham.github.io/rem-waste/` |
+| URL | `https://henrik-hung-pham.github.io/rem-waste/` |
 | Browser | Chromium 131 |
 | OS | macOS 15.3 (darwin 25.3.0) |
 | Viewport | 1280 × 800 |
@@ -104,7 +104,7 @@ In `ui/src/steps/WasteTypeStep.tsx`, `setValidation(null)` is only invoked insid
 
 | Field | Value |
 | --- | --- |
-| URL | `https://jason-pham.github.io/rem-waste/` |
+| URL | `https://henrik-hung-pham.github.io/rem-waste/` |
 | Browser | Chromium 131 |
 | Network tab | Open throughout |
 | Backend | MSW mock (in-browser) |
@@ -168,7 +168,7 @@ Fix options:
 
 | Field | Value |
 | --- | --- |
-| URL | `https://jason-pham.github.io/rem-waste/` |
+| URL | `https://henrik-hung-pham.github.io/rem-waste/` |
 | Browser | Chromium 131 |
 | Backend | MSW mock (in-browser) |
 | Fixture | `BS1 4DJ` per `ASSESSMENT.md §4` — "500 error on first call, success on retry" |
@@ -236,7 +236,7 @@ Fix options:
 
 | Field | Value |
 | --- | --- |
-| URL | `https://jason-pham.github.io/rem-waste/` |
+| URL | `https://henrik-hung-pham.github.io/rem-waste/` |
 | Browser | Chromium 131 (Playwright) |
 | OS | macOS 15.3 (darwin 25.3.0) |
 | Viewport | 1280 × 800 |
